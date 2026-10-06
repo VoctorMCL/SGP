@@ -2,6 +2,7 @@
 
 let Usuarios = require("../models/usuario");
 let auth = require("../helpers/auth");
+let validacion = require("../helpers/validacion");
 let bcrypt = require("bcrypt");
 
 let rolesValidos = ['administrador', 'guardia', 'usuario'];
@@ -12,8 +13,14 @@ function registrarUsuario(req, resp) {
     if (!requestBody.nombre || !requestBody.apellido || !requestBody.documento || !requestBody.telefono || !requestBody.correo || !requestBody.password) {
         return resp.status(400).send({ "message": "Faltan datos obligatorios del usuario" });
     }
-    else if (requestBody.correo.indexOf('@') === -1 || requestBody.correo.indexOf('.') === -1) {
+    else if (!validacion.texto(requestBody.nombre) || !validacion.texto(requestBody.apellido) || !validacion.texto(requestBody.documento)) {
+        return resp.status(400).send({ "message": "nombre, apellido y documento deben ser texto" });
+    }
+    else if (!validacion.texto(requestBody.correo) || requestBody.correo.indexOf('@') === -1 || requestBody.correo.indexOf('.') === -1) {
         return resp.status(400).send({ "message": "El correo no tiene un formato valido" });
+    }
+    else if (!validacion.texto(requestBody.password)) {
+        return resp.status(400).send({ "message": "El password debe ser texto" });
     }
     else if (String(requestBody.telefono).trim().length !== 10 || isNaN(requestBody.telefono)) {
         return resp.status(400).send({ "message": "El telefono debe tener exactamente 10 digitos" });
@@ -23,6 +30,9 @@ function registrarUsuario(req, resp) {
     }
     else if (requestBody.placas && !Array.isArray(requestBody.placas)) {
         return resp.status(400).send({ "message": "Las placas deben enviarse como un arreglo de textos" });
+    }
+    else if (requestBody.placas && requestBody.placas.some(placa => !validacion.texto(placa))) {
+        return resp.status(400).send({ "message": "Cada placa debe ser un texto no vacio" });
     }
 
     Usuarios.findOne({ "correo": requestBody.correo.toLowerCase() }).then(
@@ -74,8 +84,8 @@ function loguearUsuario(req, resp) {
     let correo = req.body.correo;
     let password = req.body.password;
 
-    if (!correo || !password) {
-        return resp.status(400).send({ "message": "Debe enviar un correo y password" });
+    if (!validacion.texto(correo) || !validacion.texto(password)) {
+        return resp.status(400).send({ "message": "Debe enviar un correo y password de tipo texto" });
     }
 
     Usuarios.findOne({ "correo": correo.toLowerCase() }).then(

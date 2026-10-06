@@ -4,6 +4,7 @@ let Casillas = require("../models/casilla");
 let Organizaciones = require("../models/organizacion");
 let Reservas = require("../models/reserva");
 let membresiaHelper = require("../helpers/membresia");
+let validacion = require("../helpers/validacion");
 
 let tiposValidos = ['standard', 'discapacitados', 'electrico'];
 let estadosValidos = ['libre', 'ocupado'];
@@ -13,6 +14,14 @@ function crearCasilla(req, resp) {
 
     if (!requestBody.organizacion || !requestBody.codigo || !requestBody.seccion) {
         return resp.status(400).send({ "message": "Faltan datos obligatorios de la casilla" });
+    }
+
+    if (!validacion.idValido(requestBody.organizacion)) {
+        return resp.status(400).send({ "message": "Id invalido" });
+    }
+
+    if (!validacion.texto(requestBody.codigo) || !validacion.texto(requestBody.seccion)) {
+        return resp.status(400).send({ "message": "codigo y seccion deben ser texto" });
     }
 
     let tipo = requestBody.tipo || 'standard';
@@ -57,6 +66,9 @@ function crearCasilla(req, resp) {
                                     resp.status(500).send({ "message": "Error al crear la casilla", "error": err });
                                 }
                             );
+                        },
+                        err => {
+                            resp.status(500).send({ "message": "Error al contar las casillas", "error": err });
                         }
                     );
                 }
@@ -70,6 +82,10 @@ function crearCasilla(req, resp) {
 
 function listarCasillas(req, resp) {
     let organizacionId = req.params.organizacionId;
+
+    if (!validacion.idValido(organizacionId)) {
+        return resp.status(400).send({ "message": "Id invalido" });
+    }
 
     membresiaHelper.esMiembro(req.usuario.id, organizacionId).then(
         (esMiembro) => {
@@ -85,6 +101,9 @@ function listarCasillas(req, resp) {
                     resp.status(500).send({ "message": "Error al consultar las casillas", "error": err });
                 }
             );
+        },
+        err => {
+            resp.status(500).send({ "message": "Error al validar la pertenencia", "error": err });
         }
     );
 }
@@ -92,6 +111,10 @@ function listarCasillas(req, resp) {
 function cambiarEstado(req, resp) {
     let casillaId = req.params.id;
     let estado = req.body.estado;
+
+    if (!validacion.idValido(casillaId)) {
+        return resp.status(400).send({ "message": "Id invalido" });
+    }
 
     if (!estadosValidos.includes(estado)) {
         return resp.status(400).send({ "message": "El estado debe ser libre u ocupado" });
@@ -125,6 +148,9 @@ function cambiarEstado(req, resp) {
                     else {
                         guardarEstadoCasilla(casilla, estado, resp);
                     }
+                },
+                err => {
+                    resp.status(500).send({ "message": "Error al validar la pertenencia", "error": err });
                 }
             );
         },
@@ -150,11 +176,21 @@ function editarCasilla(req, resp) {
     let casillaId = req.params.id;
     let requestBody = req.body;
 
+    if (!validacion.idValido(casillaId)) {
+        return resp.status(400).send({ "message": "Id invalido" });
+    }
+
     if (requestBody.tipo && !tiposValidos.includes(requestBody.tipo)) {
         return resp.status(400).send({ "message": "El tipo debe ser standard, discapacitados o electrico" });
     }
     if (requestBody.estado && !estadosValidos.includes(requestBody.estado)) {
         return resp.status(400).send({ "message": "El estado debe ser libre u ocupado" });
+    }
+    if (requestBody.codigo !== undefined && !validacion.texto(requestBody.codigo)) {
+        return resp.status(400).send({ "message": "codigo debe ser texto" });
+    }
+    if (requestBody.seccion !== undefined && !validacion.texto(requestBody.seccion)) {
+        return resp.status(400).send({ "message": "seccion debe ser texto" });
     }
 
     Casillas.findById(casillaId).then(
@@ -165,6 +201,9 @@ function editarCasilla(req, resp) {
 
             Organizaciones.findById(casilla.organizacion).then(
                 (organizacion) => {
+                    if (!organizacion) {
+                        return resp.status(404).send({ "message": "Organizacion no encontrada" });
+                    }
                     if (organizacion.creadoPor.toString() !== req.usuario.id) {
                         return resp.status(403).send({ "message": "Solo el creador de la organizacion puede modificar sus casillas" });
                     }
