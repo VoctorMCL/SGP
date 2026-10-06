@@ -275,15 +275,10 @@ reproducir los bugs de la seccion de limitaciones, usa la guia completa.
 
 ## Limitaciones conocidas
 
-Lo que **no** hace el sistema todavía. La seccion 8 de `GUIA_PRUEBAS_POSTMAN_SGP.md` explica
-como reproducir cada una con Postman.
+Lo que **no** hace el sistema todavía. 
 
 **Bugs**
 
-- **Los errores de Express salen en HTML.** Un JSON mal formado (`400`) o una ruta que no existe
-  (`404`) responden con la pagina HTML por defecto de Express, no con JSON. Tambien un request con
-  body al que se le quita el `Content-Type`: Express 5 deja `req.body` como `undefined` y el
-  controlador lo lee sin revisarlo, y sale un `500` en HTML.
 - **No hay control de concurrencia.** Dos reservas que llegan al mismo tiempo sobre la misma
   casilla pueden las dos entrar y dejar varias reservas `activas` sobre la misma casilla.
 - **`PATCH /api/casilla/:id` no revisa duplicados.** Al crear si se comprueba que no exista otra
