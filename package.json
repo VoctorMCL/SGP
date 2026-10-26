@@ -1,0 +1,55 @@
+{
+  "name": "sgp",
+  "version": "1.0.0",
+  "description": "SGP - Sistema de Gestión de Parqueo (Fullstack Angular + Express + MongoDB)",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "dev:ui": "ng serve",
+    "build": "ng build",
+    "seed": "node server/seed.js",
+    "cap:sync": "npx cap sync",
+    "cap:android": "npx cap open android"
+  },
+  "keywords": [
+    "parqueadero",
+    "angular",
+    "express",
+    "mongodb",
+    "vercel"
+  ],
+  "author": "Victor Cordoba & Ricardo Jaraba",
+  "license": "ISC",
+  "dependencies": {
+    "@angular/common": "^22.2.0",
+    "@angular/compiler": "^22.2.0",
+    "@angular/core": "^22.2.0",
+    "@angular/forms": "^22.2.0",
+    "@angular/platform-browser": "^22.2.0",
+    "@angular/router": "^22.2.0",
+    "@capacitor/core": "^8.5.3",
+    "bcrypt": "^6.0.0",
+    "body-parser": "^2.3.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.2.1",
+    "jwt-simple": "^0.5.6",
+    "moment": "^2.31.0",
+    "moment-timezone": "^0.6.5",
+    "mongoose": "^9.10.4",
+    "rxjs": "~7.8.0",
+    "socket.io": "^4.8.4",
+    "socket.io-client": "^4.8.4",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^22.2.2",
+    "@angular/cli": "^22.2.2",
+    "@angular/compiler-cli": "^22.2.0",
+    "@capacitor/cli": "^8.5.3",
+    "@tailwindcss/postcss": "^4.3.3",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.2"
+  }
+}
