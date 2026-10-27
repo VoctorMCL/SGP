@@ -122,165 +122,257 @@ import { Casilla, Organizacion, Reserva } from '../../core/models';
           </div>
         </div>
 
-        <button
-          (click)="cargarCasillas()"
-          title="Recargar estado manual"
-          class="p-2 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-800 text-xs flex items-center gap-1.5 transition-colors"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-          </svg>
-          <span>Sincronizar</span>
-        </button>
+        <div class="flex items-center gap-2">
+          <!-- Switcher entre vista Plano y vista Cuadrícula -->
+          <div class="flex p-0.5 bg-slate-950 border border-slate-800 rounded-xl text-xs">
+            <button
+              (click)="vistaModo.set('plano')"
+              [class.bg-blue-600]="vistaModo() === 'plano'"
+              [class.text-white]="vistaModo() === 'plano'"
+              [class.text-slate-400]="vistaModo() !== 'plano'"
+              class="px-2.5 py-1 rounded-lg font-semibold transition-all"
+            >
+              Plano Espacial
+            </button>
+            <button
+              (click)="vistaModo.set('secciones')"
+              [class.bg-blue-600]="vistaModo() === 'secciones'"
+              [class.text-white]="vistaModo() === 'secciones'"
+              [class.text-slate-400]="vistaModo() !== 'secciones'"
+              class="px-2.5 py-1 rounded-lg font-semibold transition-all"
+            >
+              Por Secciones
+            </button>
+          </div>
+
+          @if (authService.userRole() === 'administrador') {
+            <a
+              [routerLink]="['/organizaciones', organizacionId(), 'disenador']"
+              class="p-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 hover:text-white rounded-xl border border-blue-500/30 text-xs flex items-center gap-1.5 transition-colors"
+            >
+              <span>🎨 Diseñar Plano</span>
+            </a>
+          }
+
+          <button
+            (click)="cargarCasillas()"
+            title="Recargar estado manual"
+            class="p-2 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-800 text-xs flex items-center gap-1.5 transition-colors"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span>Sincronizar</span>
+          </button>
+        </div>
       </div>
 
       <!-- Main Layout: Parking Map Grid (Left) + Detail & Reserve Drawer (Right) -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <!-- Interactive Parking Lot Map (Slide 7) -->
         <div class="lg:col-span-8 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative">
-          <!-- Parking lanes and spots grouped by sections -->
-          <div class="space-y-8">
-            <!-- Upper Level: Sección A & Sección B -->
-            <div>
-              <div class="flex items-center justify-between text-xs text-slate-400 font-bold uppercase tracking-wider mb-3 px-1">
-                <span class="flex items-center gap-2 text-slate-300">
-                  <span class="w-2 h-2 rounded-full bg-blue-500"></span> Sección A (Norte)
-                </span>
-                <span class="text-[11px] text-slate-500">Acceso Elevador / Peatonal</span>
-                <span class="flex items-center gap-2 text-slate-300">
-                  <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Sección B (Norte)
-                </span>
-              </div>
-
-              <div class="grid grid-cols-2 gap-4">
-                <!-- Grid Sección A -->
-                <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 p-3 bg-slate-950/70 border border-slate-800/80 rounded-2xl">
-                  @for (c of casillasPorSeccion('Sección A'); track c._id) {
-                    <button
-                      type="button"
-                      (click)="seleccionarCasilla(c)"
-                      [class.ring-2]="casillaSeleccionada()?._id === c._id"
-                      [class.ring-blue-400]="casillaSeleccionada()?._id === c._id"
-                      [class.bg-emerald-950_50]="c.estado === 'libre'"
-                      [class.border-emerald-600_60]="c.estado === 'libre'"
-                      [class.text-emerald-300]="c.estado === 'libre'"
-                      [class.bg-red-950_40]="c.estado === 'ocupado'"
-                      [class.border-red-600_60]="c.estado === 'ocupado'"
-                      [class.text-red-400]="c.estado === 'ocupado'"
-                      class="h-14 rounded-xl border flex flex-col items-center justify-center p-1 transition-all hover:scale-105 active:scale-95 relative"
-                    >
+          @if (vistaModo() === 'plano') {
+            <!-- Vista Plano Diseñado (Espacial) -->
+            <div class="w-full h-[560px] bg-slate-950/90 rounded-2xl border border-dashed border-slate-800 relative overflow-auto select-none bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:24px_24px] p-4">
+              @if (casillasFiltradas().length === 0) {
+                <div class="h-full flex flex-col items-center justify-center text-slate-500 text-xs">
+                  <p>No hay elementos para mostrar.</p>
+                </div>
+              }
+              @for (c of casillasFiltradas(); track c._id) {
+                <button
+                  type="button"
+                  (click)="seleccionarCasilla(c)"
+                  [style.left.px]="c.posX || 20"
+                  [style.top.px]="c.posY || 20"
+                  [style.transform]="'rotate(' + (c.rotacion || 0) + 'deg)'"
+                  [class.ring-2]="casillaSeleccionada()?._id === c._id"
+                  [class.ring-blue-400]="casillaSeleccionada()?._id === c._id"
+                  [class.bg-emerald-950_80]="c.estado === 'libre' && c.tipo !== 'carril' && c.tipo !== 'entrada' && c.tipo !== 'salida'"
+                  [class.border-emerald-500_60]="c.estado === 'libre' && c.tipo !== 'carril' && c.tipo !== 'entrada' && c.tipo !== 'salida'"
+                  [class.text-emerald-300]="c.estado === 'libre' && c.tipo !== 'carril'"
+                  [class.bg-red-950_80]="c.estado === 'ocupado' && c.tipo !== 'carril' && c.tipo !== 'entrada' && c.tipo !== 'salida'"
+                  [class.border-red-500_60]="c.estado === 'ocupado' && c.tipo !== 'carril' && c.tipo !== 'entrada' && c.tipo !== 'salida'"
+                  [class.text-red-400]="c.estado === 'ocupado'"
+                  [class.bg-emerald-900_90]="c.tipo === 'entrada'"
+                  [class.border-emerald-400]="c.tipo === 'entrada'"
+                  [class.text-emerald-100]="c.tipo === 'entrada'"
+                  [class.bg-rose-900_90]="c.tipo === 'salida'"
+                  [class.border-rose-400]="c.tipo === 'salida'"
+                  [class.text-rose-100]="c.tipo === 'salida'"
+                  [class.bg-slate-800]="c.tipo === 'carril'"
+                  [class.border-slate-600]="c.tipo === 'carril'"
+                  [class.text-slate-300]="c.tipo === 'carril'"
+                  class="absolute rounded-xl border flex flex-col items-center justify-center p-1.5 shadow-lg transition-transform hover:scale-105"
+                  [style.width.px]="c.tipo === 'carril' ? 180 : 80"
+                  [style.height.px]="c.tipo === 'carril' ? 50 : 70"
+                >
+                  @if (c.tipo === 'entrada') {
+                    <span class="text-xs">🚗 ⬇</span>
+                    <span class="text-[9px] font-bold uppercase tracking-wider">{{ c.codigo }}</span>
+                  } @else if (c.tipo === 'salida') {
+                    <span class="text-xs">🚪 ⬆</span>
+                    <span class="text-[9px] font-bold uppercase tracking-wider">{{ c.codigo }}</span>
+                  } @else if (c.tipo === 'carril') {
+                    <span class="text-[10px] font-mono tracking-widest uppercase">═ VÍA CIRCULACIÓN ═</span>
+                  } @else {
+                    <div class="flex items-center gap-1">
+                      @if (c.tipo === 'discapacitados') { <span>♿</span> }
+                      @if (c.tipo === 'electrico') { <span>⚡</span> }
                       <span class="text-xs font-black">{{ c.codigo }}</span>
-                      <span class="text-[9px] uppercase font-semibold">
-                        @if (c.tipo === 'discapacitados') { ♿ }
-                        @else if (c.tipo === 'electrico') { ⚡ }
-                        @else { {{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }} }
-                      </span>
-                    </button>
+                    </div>
+                    <span class="text-[8px] uppercase font-bold tracking-wider mt-0.5">
+                      {{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }}
+                    </span>
                   }
+                </button>
+              }
+            </div>
+          } @else {
+            <!-- Parking lanes and spots grouped by sections -->
+            <div class="space-y-8">
+              <!-- Upper Level: Sección A & Sección B -->
+              <div>
+                <div class="flex items-center justify-between text-xs text-slate-400 font-bold uppercase tracking-wider mb-3 px-1">
+                  <span class="flex items-center gap-2 text-slate-300">
+                    <span class="w-2 h-2 rounded-full bg-blue-500"></span> Sección A (Norte)
+                  </span>
+                  <span class="text-[11px] text-slate-500">Acceso Elevador / Peatonal</span>
+                  <span class="flex items-center gap-2 text-slate-300">
+                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Sección B (Norte)
+                  </span>
                 </div>
 
-                <!-- Grid Sección B -->
-                <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 p-3 bg-slate-950/70 border border-slate-800/80 rounded-2xl">
-                  @for (c of casillasPorSeccion('Sección B'); track c._id) {
-                    <button
-                      type="button"
-                      (click)="seleccionarCasilla(c)"
-                      [class.ring-2]="casillaSeleccionada()?._id === c._id"
-                      [class.ring-blue-400]="casillaSeleccionada()?._id === c._id"
-                      [class.bg-emerald-950_50]="c.estado === 'libre'"
-                      [class.border-emerald-600_60]="c.estado === 'libre'"
-                      [class.text-emerald-300]="c.estado === 'libre'"
-                      [class.bg-red-950_40]="c.estado === 'ocupado'"
-                      [class.border-red-600_60]="c.estado === 'ocupado'"
-                      [class.text-red-400]="c.estado === 'ocupado'"
-                      class="h-14 rounded-xl border flex flex-col items-center justify-center p-1 transition-all hover:scale-105 active:scale-95 relative"
-                    >
-                      <span class="text-xs font-black">{{ c.codigo }}</span>
-                      <span class="text-[9px] uppercase font-semibold">
-                        @if (c.tipo === 'discapacitados') { ♿ }
-                        @else if (c.tipo === 'electrico') { ⚡ }
-                        @else { {{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }} }
-                      </span>
-                    </button>
-                  }
+                <div class="grid grid-cols-2 gap-4">
+                  <!-- Grid Sección A -->
+                  <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 p-3 bg-slate-950/70 border border-slate-800/80 rounded-2xl">
+                    @for (c of casillasPorSeccion('Sección A'); track c._id) {
+                      <button
+                        type="button"
+                        (click)="seleccionarCasilla(c)"
+                        [class.ring-2]="casillaSeleccionada()?._id === c._id"
+                        [class.ring-blue-400]="casillaSeleccionada()?._id === c._id"
+                        [class.bg-emerald-950_50]="c.estado === 'libre'"
+                        [class.border-emerald-600_60]="c.estado === 'libre'"
+                        [class.text-emerald-300]="c.estado === 'libre'"
+                        [class.bg-red-950_40]="c.estado === 'ocupado'"
+                        [class.border-red-600_60]="c.estado === 'ocupado'"
+                        [class.text-red-400]="c.estado === 'ocupado'"
+                        class="h-14 rounded-xl border flex flex-col items-center justify-center p-1 transition-all hover:scale-105 active:scale-95 relative"
+                      >
+                        <span class="text-xs font-black">{{ c.codigo }}</span>
+                        <span class="text-[9px] uppercase font-semibold">
+                          @if (c.tipo === 'discapacitados') { ♿ }
+                          @else if (c.tipo === 'electrico') { ⚡ }
+                          @else { {{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }} }
+                        </span>
+                      </button>
+                    }
+                  </div>
+
+                  <!-- Grid Sección B -->
+                  <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 p-3 bg-slate-950/70 border border-slate-800/80 rounded-2xl">
+                    @for (c of casillasPorSeccion('Sección B'); track c._id) {
+                      <button
+                        type="button"
+                        (click)="seleccionarCasilla(c)"
+                        [class.ring-2]="casillaSeleccionada()?._id === c._id"
+                        [class.ring-blue-400]="casillaSeleccionada()?._id === c._id"
+                        [class.bg-emerald-950_50]="c.estado === 'libre'"
+                        [class.border-emerald-600_60]="c.estado === 'libre'"
+                        [class.text-emerald-300]="c.estado === 'libre'"
+                        [class.bg-red-950_40]="c.estado === 'ocupado'"
+                        [class.border-red-600_60]="c.estado === 'ocupado'"
+                        [class.text-red-400]="c.estado === 'ocupado'"
+                        class="h-14 rounded-xl border flex flex-col items-center justify-center p-1 transition-all hover:scale-105 active:scale-95 relative"
+                      >
+                        <span class="text-xs font-black">{{ c.codigo }}</span>
+                        <span class="text-[9px] uppercase font-semibold">
+                          @if (c.tipo === 'discapacitados') { ♿ }
+                          @else if (c.tipo === 'electrico') { ⚡ }
+                          @else { {{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }} }
+                        </span>
+                      </button>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Central Roadway / Circulation (Slide 7 wireframe: "CIRCULACIÓN PRINCIPAL") -->
+              <div class="py-3 px-6 bg-slate-950 border-y border-dashed border-slate-800 rounded-xl flex items-center justify-between text-slate-500 font-mono text-[11px] tracking-widest uppercase">
+                <span class="flex items-center gap-2">← ENTRADA VEHICULAR</span>
+                <span class="font-bold text-slate-400 tracking-wider">═ CIRCULACIÓN PRINCIPAL ═</span>
+                <span class="flex items-center gap-2">SALIDA →</span>
+              </div>
+
+              <!-- Lower Level: Sección C & Sección D -->
+              <div>
+                <div class="flex items-center justify-between text-xs text-slate-400 font-bold uppercase tracking-wider mb-3 px-1">
+                  <span class="flex items-center gap-2 text-slate-300">
+                    <span class="w-2 h-2 rounded-full bg-amber-500"></span> Sección C (Sur)
+                  </span>
+                  <span class="text-[11px] text-slate-500">Zona Residencial</span>
+                  <span class="flex items-center gap-2 text-slate-300">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Sección D (Sur)
+                  </span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                  <!-- Grid Sección C -->
+                  <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 p-3 bg-slate-950/70 border border-slate-800/80 rounded-2xl">
+                    @for (c of casillasPorSeccion('Sección C'); track c._id) {
+                      <button
+                        type="button"
+                        (click)="seleccionarCasilla(c)"
+                        [class.ring-2]="casillaSeleccionada()?._id === c._id"
+                        [class.ring-blue-400]="casillaSeleccionada()?._id === c._id"
+                        [class.bg-emerald-950_50]="c.estado === 'libre'"
+                        [class.border-emerald-600_60]="c.estado === 'libre'"
+                        [class.text-emerald-300]="c.estado === 'libre'"
+                        [class.bg-red-950_40]="c.estado === 'ocupado'"
+                        [class.border-red-600_60]="c.estado === 'ocupado'"
+                        [class.text-red-400]="c.estado === 'ocupado'"
+                        class="h-14 rounded-xl border flex flex-col items-center justify-center p-1 transition-all hover:scale-105 active:scale-95 relative"
+                      >
+                        <span class="text-xs font-black">{{ c.codigo }}</span>
+                        <span class="text-[9px] uppercase font-semibold">
+                          @if (c.tipo === 'discapacitados') { ♿ }
+                          @else if (c.tipo === 'electrico') { ⚡ }
+                          @else { {{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }} }
+                        </span>
+                      </button>
+                    }
+                  </div>
+
+                  <!-- Grid Sección D -->
+                  <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 p-3 bg-slate-950/70 border border-slate-800/80 rounded-2xl">
+                    @for (c of casillasPorSeccion('Sección D'); track c._id) {
+                      <button
+                        type="button"
+                        (click)="seleccionarCasilla(c)"
+                        [class.ring-2]="casillaSeleccionada()?._id === c._id"
+                        [class.ring-blue-400]="casillaSeleccionada()?._id === c._id"
+                        [class.bg-emerald-950_50]="c.estado === 'libre'"
+                        [class.border-emerald-600_60]="c.estado === 'libre'"
+                        [class.text-emerald-300]="c.estado === 'libre'"
+                        [class.bg-red-950_40]="c.estado === 'ocupado'"
+                        [class.border-red-600_60]="c.estado === 'ocupado'"
+                        [class.text-red-400]="c.estado === 'ocupado'"
+                        class="h-14 rounded-xl border flex flex-col items-center justify-center p-1 transition-all hover:scale-105 active:scale-95 relative"
+                      >
+                        <span class="text-xs font-black">{{ c.codigo }}</span>
+                        <span class="text-[9px] uppercase font-semibold">
+                          @if (c.tipo === 'discapacitados') { ♿ }
+                          @else if (c.tipo === 'electrico') { ⚡ }
+                          @else { {{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }} }
+                        </span>
+                      </button>
+                    }
+                  </div>
                 </div>
               </div>
             </div>
-
-            <!-- Central Roadway / Circulation (Slide 7 wireframe: "CIRCULACIÓN PRINCIPAL") -->
-            <div class="py-3 px-6 bg-slate-950 border-y border-dashed border-slate-800 rounded-xl flex items-center justify-between text-slate-500 font-mono text-[11px] tracking-widest uppercase">
-              <span class="flex items-center gap-2">← ENTRADA VEHICULAR</span>
-              <span class="font-bold text-slate-400 tracking-wider">═ CIRCULACIÓN PRINCIPAL ═</span>
-              <span class="flex items-center gap-2">SALIDA →</span>
-            </div>
-
-            <!-- Lower Level: Sección C & Sección D -->
-            <div>
-              <div class="flex items-center justify-between text-xs text-slate-400 font-bold uppercase tracking-wider mb-3 px-1">
-                <span class="flex items-center gap-2 text-slate-300">
-                  <span class="w-2 h-2 rounded-full bg-amber-500"></span> Sección C (Sur)
-                </span>
-                <span class="text-[11px] text-slate-500">Zona Residencial</span>
-                <span class="flex items-center gap-2 text-slate-300">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Sección D (Sur)
-                </span>
-              </div>
-
-              <div class="grid grid-cols-2 gap-4">
-                <!-- Grid Sección C -->
-                <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 p-3 bg-slate-950/70 border border-slate-800/80 rounded-2xl">
-                  @for (c of casillasPorSeccion('Sección C'); track c._id) {
-                    <button
-                      type="button"
-                      (click)="seleccionarCasilla(c)"
-                      [class.ring-2]="casillaSeleccionada()?._id === c._id"
-                      [class.ring-blue-400]="casillaSeleccionada()?._id === c._id"
-                      [class.bg-emerald-950_50]="c.estado === 'libre'"
-                      [class.border-emerald-600_60]="c.estado === 'libre'"
-                      [class.text-emerald-300]="c.estado === 'libre'"
-                      [class.bg-red-950_40]="c.estado === 'ocupado'"
-                      [class.border-red-600_60]="c.estado === 'ocupado'"
-                      [class.text-red-400]="c.estado === 'ocupado'"
-                      class="h-14 rounded-xl border flex flex-col items-center justify-center p-1 transition-all hover:scale-105 active:scale-95 relative"
-                    >
-                      <span class="text-xs font-black">{{ c.codigo }}</span>
-                      <span class="text-[9px] uppercase font-semibold">
-                        @if (c.tipo === 'discapacitados') { ♿ }
-                        @else if (c.tipo === 'electrico') { ⚡ }
-                        @else { {{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }} }
-                      </span>
-                    </button>
-                  }
-                </div>
-
-                <!-- Grid Sección D -->
-                <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 p-3 bg-slate-950/70 border border-slate-800/80 rounded-2xl">
-                  @for (c of casillasPorSeccion('Sección D'); track c._id) {
-                    <button
-                      type="button"
-                      (click)="seleccionarCasilla(c)"
-                      [class.ring-2]="casillaSeleccionada()?._id === c._id"
-                      [class.ring-blue-400]="casillaSeleccionada()?._id === c._id"
-                      [class.bg-emerald-950_50]="c.estado === 'libre'"
-                      [class.border-emerald-600_60]="c.estado === 'libre'"
-                      [class.text-emerald-300]="c.estado === 'libre'"
-                      [class.bg-red-950_40]="c.estado === 'ocupado'"
-                      [class.border-red-600_60]="c.estado === 'ocupado'"
-                      [class.text-red-400]="c.estado === 'ocupado'"
-                      class="h-14 rounded-xl border flex flex-col items-center justify-center p-1 transition-all hover:scale-105 active:scale-95 relative"
-                    >
-                      <span class="text-xs font-black">{{ c.codigo }}</span>
-                      <span class="text-[9px] uppercase font-semibold">
-                        @if (c.tipo === 'discapacitados') { ♿ }
-                        @else if (c.tipo === 'electrico') { ⚡ }
-                        @else { {{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }} }
-                      </span>
-                    </button>
-                  }
-                </div>
-              </div>
-            </div>
-          </div>
+          }
 
           <!-- Bottom Sensor Status Footer (Slide 7 wireframe) -->
           <div class="mt-8 pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
@@ -450,6 +542,22 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
 
   busqueda = '';
   filtroTipo = signal<'todos' | 'libre' | 'discapacitados' | 'electrico'>('todos');
+  vistaModo = signal<'plano' | 'secciones'>('plano');
+
+  casillasFiltradas = computed(() => {
+    let lista = this.casillas();
+    if (this.busqueda.trim()) {
+      lista = lista.filter(c => c.codigo.toLowerCase().includes(this.busqueda.trim().toLowerCase()));
+    }
+    if (this.filtroTipo() === 'libre') {
+      lista = lista.filter(c => c.estado === 'libre');
+    } else if (this.filtroTipo() === 'discapacitados') {
+      lista = lista.filter(c => c.tipo === 'discapacitados');
+    } else if (this.filtroTipo() === 'electrico') {
+      lista = lista.filter(c => c.tipo === 'electrico');
+    }
+    return lista;
+  });
 
   placaReserva = '';
   duracionHoras = 2;

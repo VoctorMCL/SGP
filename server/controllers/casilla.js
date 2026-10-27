@@ -7,7 +7,7 @@ let membresiaHelper = require("../helpers/membresia");
 let validacion = require("../helpers/validacion");
 let socketHelper = require("../helpers/socket");
 
-let tiposValidos = ['standard', 'discapacitados', 'electrico'];
+let tiposValidos = ['standard', 'discapacitados', 'electrico', 'entrada', 'salida', 'carril'];
 let estadosValidos = ['libre', 'ocupado'];
 
 function crearCasilla(req, resp) {
@@ -56,7 +56,10 @@ function crearCasilla(req, resp) {
                                 "codigo": requestBody.codigo,
                                 "seccion": requestBody.seccion,
                                 "tipo": tipo,
-                                "estado": "libre"
+                                "estado": "libre",
+                                "posX": typeof requestBody.posX === 'number' ? requestBody.posX : 0,
+                                "posY": typeof requestBody.posY === 'number' ? requestBody.posY : 0,
+                                "rotacion": typeof requestBody.rotacion === 'number' ? requestBody.rotacion : 0
                             });
 
                             casilla.save().then(
@@ -244,9 +247,13 @@ function guardarEdicionCasilla(casilla, requestBody, resp) {
     if (requestBody.seccion) casilla.seccion = requestBody.seccion;
     if (requestBody.tipo) casilla.tipo = requestBody.tipo;
     if (requestBody.estado) casilla.estado = requestBody.estado;
+    if (typeof requestBody.posX === 'number') casilla.posX = requestBody.posX;
+    if (typeof requestBody.posY === 'number') casilla.posY = requestBody.posY;
+    if (typeof requestBody.rotacion === 'number') casilla.rotacion = requestBody.rotacion;
 
     casilla.save().then(
         (casillaActualizada) => {
+            socketHelper.emitirEvento('casilla:actualizada', casillaActualizada, casillaActualizada.organizacion);
             resp.status(200).send({ "message": "casilla actualizada", "casilla": casillaActualizada });
         },
         err => {
@@ -255,4 +262,50 @@ function guardarEdicionCasilla(casilla, requestBody, resp) {
     );
 }
 
-module.exports = { crearCasilla, listarCasillas, cambiarEstado, editarCasilla };
+function eliminarCasilla(req, resp) {
+    let casillaId = req.params.id;
+
+    if (!validacion.idValido(casillaId)) {
+        return resp.status(400).send({ "message": "Id invalido" });
+    }
+
+    Casillas.findById(casillaId).then(
+        (casilla) => {
+            if (!casilla) {
+                return resp.status(404).send({ "message": "Casilla no encontrada" });
+            }
+
+            Organizaciones.findById(casilla.organizacion).then(
+                (organizacion) => {
+                    if (!organizacion) {
+                        return resp.status(404).send({ "message": "Organizacion no encontrada" });
+                    }
+                    if (organizacion.creadoPor.toString() !== req.usuario.id) {
+                        return resp.status(403).send({ "message": "Solo el creador puede eliminar elementos" });
+                    }
+
+                    Reservas.findOne({ "casilla": casilla._id, "estado": "activa" }).then(
+                        (reservaActiva) => {
+                            if (reservaActiva) {
+                                return resp.status(400).send({ "message": "No se puede eliminar una casilla con reserva activa" });
+                            }
+
+                            Casillas.findByIdAndDelete(casillaId).then(
+                                () => {
+                                    socketHelper.emitirEvento('casilla:eliminada', { _id: casillaId }, casilla.organizacion);
+                                    resp.status(200).send({ "message": "casilla eliminada", "id": casillaId });
+                                },
+                                err => resp.status(500).send({ "message": "Error al eliminar la casilla", "error": err })
+                            );
+                        },
+                        err => resp.status(500).send({ "message": "Error al validar reservas", "error": err })
+                    );
+                },
+                err => resp.status(500).send({ "message": "Error al validar organizacion", "error": err })
+            );
+        },
+        err => resp.status(500).send({ "message": "Error al buscar casilla", "error": err })
+    );
+}
+
+module.exports = { crearCasilla, listarCasillas, cambiarEstado, editarCasilla, eliminarCasilla };

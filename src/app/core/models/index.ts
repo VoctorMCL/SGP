@@ -32,8 +32,11 @@ export interface Casilla {
   organizacion: string;
   codigo: string;
   seccion: string;
-  tipo: 'standard' | 'discapacitados' | 'electrico';
+  tipo: 'standard' | 'discapacitados' | 'electrico' | 'entrada' | 'salida' | 'carril';
   estado: 'libre' | 'ocupado';
+  posX?: number;
+  posY?: number;
+  rotacion?: number;
 }
 
 export interface Reserva {

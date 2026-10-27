@@ -9,7 +9,10 @@ let CasillaSchema = Schema(
         "codigo": String,
         "seccion": String,
         "tipo": String,
-        "estado": String
+        "estado": String,
+        "posX": { type: Number, default: 0 },
+        "posY": { type: Number, default: 0 },
+        "rotacion": { type: Number, default: 0 }
     }
 );
 

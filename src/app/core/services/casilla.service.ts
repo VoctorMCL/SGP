@@ -20,11 +20,15 @@ export class CasillaService {
     return this.http.patch(`${environment.apiUrl}/casilla/${casillaId}/estado`, { estado });
   }
 
-  crearCasilla(datos: { organizacion: string; codigo: string; seccion: string; tipo: string }): Observable<any> {
+  crearCasilla(datos: Partial<Casilla>): Observable<any> {
     return this.http.post(`${environment.apiUrl}/casilla`, datos);
   }
 
   editarCasilla(casillaId: string, datos: Partial<Casilla>): Observable<any> {
     return this.http.patch(`${environment.apiUrl}/casilla/${casillaId}`, datos);
+  }
+
+  eliminarCasilla(casillaId: string): Observable<any> {
+    return this.http.delete(`${environment.apiUrl}/casilla/${casillaId}`);
   }
 }

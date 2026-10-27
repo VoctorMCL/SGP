@@ -9,5 +9,6 @@ router.post("/api/casilla", auth.validarToken, auth.validarAdministrador, casill
 router.get("/api/casilla/organizacion/:organizacionId", auth.validarToken, casillaController.listarCasillas);
 router.patch("/api/casilla/:id/estado", auth.validarToken, auth.validarGuardiaOAdmin, casillaController.cambiarEstado);
 router.patch("/api/casilla/:id", auth.validarToken, casillaController.editarCasilla);
+router.delete("/api/casilla/:id", auth.validarToken, auth.validarAdministrador, casillaController.eliminarCasilla);
 
 module.exports = router;
