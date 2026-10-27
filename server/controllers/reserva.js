@@ -201,29 +201,40 @@ function alertasOrganizacion(req, resp) {
 
                     let zona = validacion.zonaHorariaValida(organizacion.zonaHoraria) ? organizacion.zonaHoraria : moment.tz.guess();
 
-                    Reservas.find({ "organizacion": organizacionId, "estado": "activa" }).then(
-                        (reservas) => {
-                            let ahora = moment().tz(zona);
-                            let alertas = reservas.map(reserva => {
-                                let horaInicio = moment(reserva.horaInicio).tz(zona);
-                                let horaFin = horaInicio.clone().add(reserva.duracionHoras, 'hours');
-                                return {
-                                    "reserva": reserva._id,
-                                    "placa": reserva.placa,
-                                    "casilla": reserva.casilla,
-                                    "horaInicio": horaInicio.format("YYYY-MM-DD HH:mm"),
-                                    "horaFin": horaFin.format("YYYY-MM-DD HH:mm"),
-                                    "horasVencidas": ahora.diff(horaFin, 'hours'),
-                                    "zonaHoraria": zona
-                                };
-                            });
-                            let vencidas = alertas.filter(alerta => ahora.isAfter(alerta.horaFin));
-                            resp.status(200).send({ "message": "alertas encontradas", "zonaHoraria": zona, "alertas": vencidas });
-                        },
-                        err => {
-                            resp.status(500).send({ "message": "Error al consultar las reservas", "error": err });
-                        }
-                    );
+                    Reservas.find({ "organizacion": organizacionId, "estado": "activa" })
+                        .populate("casilla", "codigo seccion estado tipo")
+                        .populate("usuario", "nombre apellido telefono")
+                        .then(
+                            (reservas) => {
+                                let ahora = moment().tz(zona);
+
+                                const vencidas = reservas
+                                    .map((reserva) => {
+                                        const horaInicio = moment(reserva.horaInicio).tz(zona);
+                                        const horaFin = horaInicio.clone().add(reserva.duracionHoras, 'hours');
+                                        return { reserva, horaInicio, horaFin };
+                                    })
+                                    .filter(({ horaFin }) => ahora.isAfter(horaFin))
+                                    .map(({ reserva, horaInicio, horaFin }) => ({
+                                        "_id": reserva._id,
+                                        "reserva": reserva._id,
+                                        "placa": reserva.placa,
+                                        "casilla": reserva.casilla,
+                                        "usuario": reserva.usuario,
+                                        "duracionHoras": reserva.duracionHoras,
+                                        "horaInicio": horaInicio.format("YYYY-MM-DD HH:mm"),
+                                        "horaFin": horaFin.format("YYYY-MM-DD HH:mm"),
+                                        "horasVencidas": ahora.diff(horaFin, 'hours'),
+                                        "horasExcedidas": Math.round((ahora.diff(horaFin, 'minutes') / 60) * 10) / 10,
+                                        "zonaHoraria": zona
+                                    }));
+
+                                resp.status(200).send({ "message": "alertas encontradas", "zonaHoraria": zona, "alertas": vencidas });
+                            },
+                            err => {
+                                resp.status(500).send({ "message": "Error al consultar las reservas", "error": err });
+                            }
+                        );
                 },
                 err => {
                     resp.status(500).send({ "message": "Error al buscar la organizacion", "error": err });

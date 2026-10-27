@@ -1,22 +1,32 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { NavbarComponent } from '../../shared/components/navbar.component';
 import { CasillaService } from '../../core/services/casilla.service';
 import { OrganizacionService } from '../../core/services/organizacion.service';
 import { Casilla, Organizacion } from '../../core/models';
 
+type TipoElemento = 'standard' | 'discapacitados' | 'electrico' | 'entrada' | 'salida' | 'carril';
+
 interface ElementoDiseno {
+  uid: string;
   _id?: string;
   codigo: string;
   seccion: string;
-  tipo: 'standard' | 'discapacitados' | 'electrico' | 'entrada' | 'salida' | 'carril';
+  tipo: TipoElemento;
   estado: 'libre' | 'ocupado';
   posX: number;
   posY: number;
   rotacion: number;
   esNuevo?: boolean;
+}
+
+interface Feedback {
+  tipo: 'ok' | 'warn' | 'error';
+  texto: string;
 }
 
 @Component({
@@ -26,279 +36,525 @@ interface ElementoDiseno {
   template: `
     <app-navbar></app-navbar>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <a routerLink="/organizaciones" class="text-xs text-slate-400 hover:text-white flex items-center gap-1">
-              ← Mis Sedes
-            </a>
-            <span class="text-slate-600">/</span>
-            <span class="text-xs font-semibold text-blue-400">Editor Visual de Estacionamiento</span>
+    <main class="mx-auto max-w-[94rem] px-4 py-6 sm:px-6 lg:px-8">
+      <!-- Encabezado -->
+      <div class="flex flex-col gap-5 border-b border-edge pb-5 md:flex-row md:items-end md:justify-between">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <a routerLink="/organizaciones" class="mono text-[0.55rem] uppercase tracking-[0.16em] text-mist transition-colors hover:text-chalk">Mis sedes</a>
+            <span class="text-mist/40">/</span>
+            <span class="mono text-[0.55rem] uppercase tracking-[0.16em] text-signal">Editor de plano</span>
           </div>
-          <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-            <span>Diseñador del Plano: {{ organizacion()?.nombre }}</span>
-          </h1>
-          <p class="text-xs text-slate-400 mt-1">
-            Dibuja la distribución espacial: añade casillas, entradas y carriles. Arrastra y rota cada elemento para configurar tu estacionamiento.
+
+          <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 class="text-3xl font-semibold tracking-[-0.04em] text-chalk sm:text-4xl">Dibuja tu parqueadero</h1>
+            <span class="tag tag-flow">{{ organizacion()?.nombre || 'Sede' }}</span>
+          </div>
+          <p class="mt-2 max-w-2xl text-[0.72rem] leading-relaxed text-mist">
+            Arrastra para mover · usa el tirador superior para girar · haz clic con una herramienta activa para colocar casillas, entradas y salidas.
           </p>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="mono mr-1 inline-flex items-center gap-1.5 text-[0.55rem] uppercase tracking-[0.12em]" [ngClass]="hayCambios() ? 'text-warn' : 'text-ok'">
+            <span class="h-1.5 w-1.5 rounded-full" [ngClass]="hayCambios() ? 'bg-warn' : 'bg-ok'"></span>
+            {{ hayCambios() ? 'Sin guardar' : 'Guardado' }}
+          </span>
+
           <a
             [routerLink]="['/mapa', organizacionId()]"
-            class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 rounded-xl text-xs font-semibold flex items-center gap-2 transition-colors"
+            class="btn btn-ghost"
+            title="Abrir la vista del conductor"
           >
-            <span>Ver Mapa de Conductores</span>
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
+              <circle cx="12" cy="12" r="2.6" stroke-width="1.8"></circle>
             </svg>
+            <span class="hidden sm:inline">Vista conductor</span>
           </a>
 
-          <button
-            type="button"
-            (click)="guardarDiseno()"
-            [disabled]="guardando()"
-            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-500/25 flex items-center gap-2 disabled:opacity-50 transition-all"
-          >
+          <button type="button" (click)="guardarDiseno()" [disabled]="guardando()" class="btn btn-signal h-9">
             @if (guardando()) {
-              <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              <span>Guardando plano...</span>
+              <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-void/25 border-t-void"></span>
+              <span>Guardando…</span>
             } @else {
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12.5 9 17l10-10"></path>
               </svg>
-              <span>Guardar Plano</span>
+              <span>Guardar plano</span>
             }
           </button>
         </div>
       </div>
 
-      @if (mensajeFeedback()) {
-        <div class="mb-4 p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-xs flex items-center justify-between">
-          <span>{{ mensajeFeedback() }}</span>
-          <button (click)="mensajeFeedback.set(null)" class="text-emerald-400 hover:text-white text-sm">✕</button>
+      @if (feedback(); as f) {
+        <div
+          class="mt-4 flex items-start justify-between gap-3 rounded-md border p-3 text-[0.7rem]"
+          [ngClass]="{
+            'border-ok/30 bg-ok/[0.07] text-ok': f.tipo === 'ok',
+            'border-warn/30 bg-warn/[0.07] text-warn': f.tipo === 'warn',
+            'border-danger/30 bg-danger/[0.07] text-danger': f.tipo === 'error'
+          }"
+        >
+          <span class="flex items-start gap-2">
+            <svg class="mt-0.5 h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              @if (f.tipo === 'ok') {
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 13 4 4 10-10"></path>
+              } @else {
+                <circle cx="12" cy="12" r="9" stroke-width="1.8"></circle>
+                <path stroke-linecap="round" stroke-width="1.8" d="M12 8v4m0 3.5v.01"></path>
+              }
+            </svg>
+            {{ f.texto }}
+          </span>
+          <button type="button" (click)="feedback.set(null)" class="text-current/70 transition-opacity hover:opacity-100" aria-label="Cerrar aviso">
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-width="2" d="M6 6l12 12M18 6 6 18"></path>
+            </svg>
+          </button>
         </div>
       }
 
-      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2 flex-wrap">
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1">Añadir Elemento:</span>
-          
-          <button
-            type="button"
-            (click)="agregarElemento('standard')"
-            class="px-3 py-1.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
-          >
-            <span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span>
-            + Casilla Estándar
-          </button>
+      <!-- Barra de herramientas -->
+      <section class="panel mt-4 p-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="mono mr-1 hidden text-[0.52rem] uppercase tracking-[0.16em] text-mist lg:inline">Herramientas</span>
 
-          <button
-            type="button"
-            (click)="agregarElemento('discapacitados')"
-            class="px-3 py-1.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-blue-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
-          >
-            <span>♿</span>
-            + Discapacitados
-          </button>
+            <button
+              type="button"
+              (click)="seleccionarHerramienta('select')"
+              class="tool-btn"
+              [class.tool-btn-active]="herramienta() === 'select'"
+              title="Mover y seleccionar (Esc)"
+            >
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m5 4 14 6-6 2-2 6-6-14Z"></path>
+              </svg>
+              Mover
+            </button>
 
-          <button
-            type="button"
-            (click)="agregarElemento('electrico')"
-            class="px-3 py-1.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-amber-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
-          >
-            <span>⚡</span>
-            + Eléctrico
-          </button>
-
-          <button
-            type="button"
-            (click)="agregarElemento('entrada')"
-            class="px-3 py-1.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-emerald-400 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
-          >
-            <span>🚗</span>
-            + Entrada Vehicular
-          </button>
-
-          <button
-            type="button"
-            (click)="agregarElemento('salida')"
-            class="px-3 py-1.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-rose-400 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
-          >
-            <span>🚪</span>
-            + Salida
-          </button>
-
-          <button
-            type="button"
-            (click)="agregarElemento('carril')"
-            class="px-3 py-1.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
-          >
-            <span>═</span>
-            + Carril / Vía
-          </button>
-        </div>
-
-        <button
-          type="button"
-          (click)="generarFila('A', 6)"
-          class="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
-        >
-          <span>⚡</span>
-          + Generar Fila Rápida (6 Puestos)
-        </button>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div class="lg:col-span-9 bg-slate-950 border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
-          <div class="flex items-center justify-between mb-4 text-xs text-slate-400">
-            <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-              <span>Lienzo del Plano (Haz clic para seleccionar, arrastra o rota con el botón)</span>
-            </div>
-            <span class="text-[11px] font-mono text-slate-500">Total Elementos: {{ elementos().length }}</span>
+            @for (t of tipos; track t.id) {
+              <button
+                type="button"
+                (click)="seleccionarHerramienta(t.id)"
+                class="tool-btn"
+                [class.tool-btn-active]="herramienta() === t.id"
+                [title]="'Colocar ' + t.label"
+              >
+                <span class="h-1.5 w-1.5 rounded-full" [ngClass]="t.dot"></span>
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  @switch (t.id) {
+                    @case ('standard') {
+                      <rect x="5" y="4" width="14" height="16" rx="1.5" stroke-width="1.7"></rect>
+                      <path stroke-width="1.7" d="M9 16V8h3.4a2.6 2.6 0 0 1 0 5.2H9"></path>
+                    }
+                    @case ('discapacitados') {
+                      <circle cx="11" cy="5" r="1.7" stroke-width="1.7"></circle>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M11 8v6h5.5l2 5M8 10.5a4.5 4.5 0 1 0 5 7.5"></path>
+                    }
+                    @case ('electrico') {
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="m13 3-8 11h6l-1 7 8-11h-6l1-7Z"></path>
+                    }
+                    @case ('entrada') {
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"></path>
+                    }
+                    @case ('salida') {
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 21V9m0 0 4 4M12 9l-4 4M5 3h14"></path>
+                    }
+                    @case ('carril') {
+                      <path stroke-linecap="round" stroke-width="1.7" d="M4 12h16M8 8v8M16 8v8" stroke-dasharray="2 3"></path>
+                    }
+                  }
+                </svg>
+                <span class="hidden sm:inline">{{ t.label }}</span>
+              </button>
+            }
           </div>
 
-          <div
-            id="lienzo-diseno"
-            (click)="deseleccionar()"
-            class="w-full h-[620px] bg-slate-900/50 rounded-2xl border border-dashed border-slate-800 relative overflow-auto cursor-crosshair select-none bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:24px_24px]"
-          >
-            @for (elem of elementos(); track elem.codigo + '_' + $index) {
-              <div
-                (click)="$event.stopPropagation(); seleccionarElemento(elem)"
-                (mousedown)="iniciarArrastre($event, elem)"
-                [style.left.px]="elem.posX"
-                [style.top.px]="elem.posY"
-                [style.transform]="'rotate(' + (elem.rotacion || 0) + 'deg)'"
-                [class.ring-2]="elementoSeleccionado() === elem"
-                [class.ring-blue-400]="elementoSeleccionado() === elem"
-                [class.z-30]="elementoSeleccionado() === elem"
-                [class.bg-emerald-950_80]="elem.tipo === 'standard'"
-                [class.border-emerald-500_60]="elem.tipo === 'standard'"
-                [class.text-emerald-300]="elem.tipo === 'standard'"
-                [class.bg-blue-950_80]="elem.tipo === 'discapacitados'"
-                [class.border-blue-500_60]="elem.tipo === 'discapacitados'"
-                [class.text-blue-300]="elem.tipo === 'discapacitados'"
-                [class.bg-amber-950_80]="elem.tipo === 'electrico'"
-                [class.border-amber-500_60]="elem.tipo === 'electrico'"
-                [class.text-amber-300]="elem.tipo === 'electrico'"
-                [class.bg-emerald-900_90]="elem.tipo === 'entrada'"
-                [class.border-emerald-400]="elem.tipo === 'entrada'"
-                [class.text-emerald-200]="elem.tipo === 'entrada'"
-                [class.bg-rose-900_90]="elem.tipo === 'salida'"
-                [class.border-rose-400]="elem.tipo === 'salida'"
-                [class.text-rose-200]="elem.tipo === 'salida'"
-                [class.bg-slate-800]="elem.tipo === 'carril'"
-                [class.border-slate-600]="elem.tipo === 'carril'"
-                [class.text-slate-300]="elem.tipo === 'carril'"
-                class="absolute rounded-xl border flex flex-col items-center justify-center p-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-105"
-                [style.width.px]="elem.tipo === 'carril' ? 180 : 80"
-                [style.height.px]="elem.tipo === 'carril' ? 50 : 70"
-              >
-                @if (elem.tipo === 'entrada') {
-                  <span class="text-sm">🚗 ⬇</span>
-                  <span class="text-[10px] font-bold uppercase tracking-wider mt-0.5">{{ elem.codigo }}</span>
-                } @else if (elem.tipo === 'salida') {
-                  <span class="text-sm">🚪 ⬆</span>
-                  <span class="text-[10px] font-bold uppercase tracking-wider mt-0.5">{{ elem.codigo }}</span>
-                } @else if (elem.tipo === 'carril') {
-                  <span class="text-xs font-mono font-bold tracking-widest">═ VÍA CIRCULACIÓN ═</span>
-                } @else {
-                  <div class="flex items-center gap-1">
-                    @if (elem.tipo === 'discapacitados') { <span>♿</span> }
-                    @if (elem.tipo === 'electrico') { <span>⚡</span> }
-                    <span class="text-xs font-black">{{ elem.codigo }}</span>
-                  </div>
-                  <span class="text-[9px] uppercase font-semibold text-slate-400">{{ elem.seccion }}</span>
-                }
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button type="button" (click)="generarFila('A', 6)" class="btn btn-ghost h-8 px-2.5 text-[0.6rem]">
+              <svg class="h-3 w-3 text-signal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-width="1.8" d="M12 5v14M5 12h14"></path>
+              </svg>
+              Fila de 6
+            </button>
 
-                @if (elem.rotacion) {
-                  <span class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-900 border border-slate-700 text-[8px] flex items-center justify-center text-slate-400 font-mono">
-                    {{ elem.rotacion }}°
-                  </span>
-                }
+            <span class="mx-0.5 hidden h-5 w-px bg-edge sm:block"></span>
+
+            <button
+              type="button"
+              (click)="snap.set(!snap())"
+              class="tool-btn h-8"
+              [class.tool-btn-active]="snap()"
+              title="Ajustar a la cuadrícula"
+            >
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-width="1.7" d="M3 9h18M3 15h18M9 3v18M15 3v18"></path>
+              </svg>
+              Snap
+            </button>
+
+            <button
+              type="button"
+              (click)="mostrarGrilla.set(!mostrarGrilla())"
+              class="tool-btn h-8"
+              [class.tool-btn-active]="mostrarGrilla()"
+              title="Mostrar u ocultar cuadrícula"
+            >
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="4" y="4" width="16" height="16" rx="1" stroke-width="1.7"></rect>
+                <path stroke-width="1.7" d="M4 10h16M10 4v16"></path>
+              </svg>
+              Grid
+            </button>
+
+            <span class="mx-0.5 hidden h-5 w-px bg-edge sm:block"></span>
+
+            <div class="flex items-center overflow-hidden rounded border border-edge">
+              <button type="button" (click)="cambiarZoom(-0.1)" class="grid h-8 w-8 place-items-center text-mist transition-colors hover:bg-white/[0.04] hover:text-chalk" title="Alejar">
+                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-width="2" d="M5 12h14"></path>
+                </svg>
+              </button>
+              <button type="button" (click)="resetZoom()" class="mono h-8 min-w-[3rem] border-x border-edge px-1 text-[0.55rem] text-chalk transition-colors hover:bg-white/[0.04]" title="Restablecer zoom">
+                {{ zoomPorcentaje() }}%
+              </button>
+              <button type="button" (click)="cambiarZoom(0.1)" class="grid h-8 w-8 place-items-center text-mist transition-colors hover:bg-white/[0.04] hover:text-chalk" title="Acercar">
+                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-width="2" d="M12 5v14M5 12h14"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-edge pt-2.5">
+          <p class="mono text-[0.54rem] uppercase tracking-[0.1em] text-mist">
+            @if (herramienta() === 'select') {
+              Modo selección · arrastra los elementos para moverlos · <span class="text-signal">R</span> gira 15°
+            } @else {
+              Modo dibujo · haz clic en el lienzo para colocar {{ tipoEtiqueta(herramienta()) }} · <span class="text-signal">Esc</span> para salir
+            }
+          </p>
+          <div class="flex items-center gap-3 text-[0.55rem] text-mist">
+            <span class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-ok"></span>{{ libresCount() }} libres</span>
+            <span class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-danger"></span>{{ ocupadasCount() }} ocupadas</span>
+            <span class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-mist"></span>{{ elementos().length }} elementos</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Lienzo + inspector -->
+      <div class="mt-4 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20.5rem]">
+        <section class="panel overflow-hidden">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-edge px-4 py-2.5">
+            <div class="flex items-center gap-2">
+              <span class="live-dot scale-75"></span>
+              <span class="mono text-[0.54rem] uppercase tracking-[0.16em] text-chalk">Lienzo del plano</span>
+              <span class="mono text-[0.5rem] text-mist/50">1200 × 720 px</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="mono text-[0.5rem] uppercase tracking-[0.12em] text-mist">X <span class="text-chalk">{{ cursorPos().x }}</span> · Y <span class="text-chalk">{{ cursorPos().y }}</span></span>
+              <span class="tag tag-muted hidden sm:inline">1:100</span>
+            </div>
+          </div>
+
+          <div class="relative h-[30rem] overflow-auto bg-[#06090e] sm:h-[36rem] xl:h-[40rem]">
+            <div class="min-h-full min-w-full p-4">
+              <div
+                class="relative shrink-0"
+                [style.width.px]="ANCHO * zoom()"
+                [style.height.px]="ALTO * zoom()"
+              >
+                <div
+                  id="plan-surface"
+                  class="plan-surface absolute left-0 top-0 origin-top-left"
+                  [class.no-grid]="!mostrarGrilla()"
+                  [style.width.px]="ANCHO"
+                  [style.height.px]="ALTO"
+                  [style.transform]="'scale(' + zoom() + ')'"
+                  [class.cursor-crosshair]="herramienta() !== 'select'"
+                  (click)="alClickLienzo($event)"
+                  (pointermove)="alMoverSobreLienzo($event)"
+                >
+                  <!-- Marco y rótulos -->
+                  <div class="pointer-events-none absolute inset-0 border border-edge-strong/40"></div>
+                  <span class="pointer-events-none absolute left-2 top-2 z-10 h-5 w-5 border-l border-t border-signal/35"></span>
+                  <span class="pointer-events-none absolute right-2 top-2 z-10 h-5 w-5 border-r border-t border-signal/35"></span>
+                  <span class="pointer-events-none absolute bottom-2 left-2 z-10 h-5 w-5 border-b border-l border-signal/35"></span>
+                  <span class="pointer-events-none absolute bottom-2 right-2 z-10 h-5 w-5 border-b border-r border-signal/35"></span>
+
+                  <span class="mono pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 text-[0.5rem] uppercase tracking-[0.24em] text-mist/30">Plano de estacionamiento · {{ organizacion()?.nombre }}</span>
+                  <div class="pointer-events-none absolute bottom-4 right-4 z-10 flex flex-col items-center gap-1 text-mist/30">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 20V4m0 0-4 4m4-4 4 4"></path>
+                    </svg>
+                    <span class="mono text-[0.5rem]">N</span>
+                  </div>
+
+                  <!-- Elementos -->
+                  @for (elem of elementos(); track elem.uid) {
+                    <div
+                      class="bay group/bay"
+                      [attr.data-tipo]="elem.tipo"
+                      [attr.data-estado]="elem.tipo === 'standard' || elem.tipo === 'discapacitados' || elem.tipo === 'electrico' ? elem.estado : null"
+                      [class.is-selected]="seleccionadoId() === elem.uid"
+                      [style.left.px]="elem.posX"
+                      [style.top.px]="elem.posY"
+                      [style.width.px]="anchoDe(elem)"
+                      [style.height.px]="altoDe(elem)"
+                      [style.transform]="'rotate(' + elem.rotacion + 'deg)'"
+                      [style.cursor]="herramienta() === 'select' ? 'grab' : 'crosshair'"
+                      (click)="$event.stopPropagation(); seleccionarElemento(elem)"
+                      (pointerdown)="iniciarArrastre($event, elem)"
+                    >
+                      @switch (elem.tipo) {
+                        @case ('standard') {
+                          <svg class="bay-glyph h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M5 16v-4.2L6.8 7h10.4L19 11.8V16M4 16h16v3H4zM7 16v2m10-2v2"></path>
+                            <path stroke-width="1.3" d="M7 11.5h10"></path>
+                          </svg>
+                          <span class="bay-code">{{ elem.codigo }}</span>
+                          <span class="bay-meta">{{ elem.seccion }}</span>
+                        }
+                        @case ('discapacitados') {
+                          <svg class="bay-glyph h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="11" cy="4.6" r="1.7" stroke-width="1.6"></circle>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M11 8v5.5h5l2 5.5M8 10a4.6 4.6 0 1 0 5.4 7.4"></path>
+                          </svg>
+                          <span class="bay-code">{{ elem.codigo }}</span>
+                          <span class="bay-meta">Movilidad</span>
+                        }
+                        @case ('electrico') {
+                          <svg class="bay-glyph h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="m13 3-8 11h6l-1 7 8-11h-6l1-7Z"></path>
+                          </svg>
+                          <span class="bay-code">{{ elem.codigo }}</span>
+                          <span class="bay-meta">Eléctrico</span>
+                        }
+                        @case ('entrada') {
+                          <svg class="bay-glyph h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"></path>
+                          </svg>
+                          <span class="bay-code">{{ elem.codigo }}</span>
+                          <span class="bay-meta">{{ elem.seccion }}</span>
+                        }
+                        @case ('salida') {
+                          <svg class="bay-glyph h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21V9m0 0 4 4M12 9l-4 4M5 3h14"></path>
+                          </svg>
+                          <span class="bay-code">{{ elem.codigo }}</span>
+                          <span class="bay-meta">{{ elem.seccion }}</span>
+                        }
+                        @case ('carril') {
+                          <span class="bay-lane-line"></span>
+                          <div class="relative z-[2] flex w-full items-center justify-between px-3">
+                            <span class="mono text-[0.5rem] uppercase tracking-[0.16em] text-mist/60">◀</span>
+                            <span class="mono text-[0.5rem] uppercase tracking-[0.2em] text-mist/80">Vía de circulación</span>
+                            <span class="mono text-[0.5rem] uppercase tracking-[0.16em] text-mist/60">▶</span>
+                          </div>
+                        }
+                      }
+
+                      @if (elem.rotacion) {
+                        <span class="mono absolute right-1 top-1 z-[2] rounded-sm bg-void/70 px-1 text-[0.42rem] text-mist/80">{{ elem.rotacion }}°</span>
+                      }
+                    </div>
+                  }
+
+                  <!-- Tirador de rotación -->
+                  @if (seleccionado(); as sel) {
+                    <div
+                      class="absolute z-40 flex flex-col items-center"
+                      [style.left.px]="sel.posX + anchoDe(sel) / 2 - 14"
+                      [style.top.px]="sel.posY - 44"
+                    >
+                      <button
+                        type="button"
+                        (pointerdown)="iniciarRotacion($event, sel)"
+                        (click)="$event.stopPropagation()"
+                        class="grid h-7 w-7 place-items-center rounded-full border border-signal/60 bg-void text-signal shadow-[0_0_18px_-2px_rgba(216,255,62,0.45)] transition-transform hover:scale-110"
+                        title="Arrastra para girar"
+                      >
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"></path>
+                        </svg>
+                      </button>
+                      <span class="h-3.5 w-px bg-signal/60"></span>
+                    </div>
+
+                    <!-- Acciones rápidas flotantes -->
+                    <div
+                      class="absolute z-40 flex items-center gap-1 rounded-md border border-edge bg-void/95 p-1 shadow-xl backdrop-blur"
+                      [style.left.px]="sel.posX + anchoDe(sel) / 2 - 58"
+                      [style.top.px]="sel.posY + altoDe(sel) + 10"
+                    >
+                      <button type="button" (pointerdown)="$event.stopPropagation()" (click)="$event.stopPropagation(); girarElemento(sel, -15)" class="grid h-6 w-6 place-items-center rounded text-mist transition-colors hover:bg-white/[0.06] hover:text-chalk" title="Girar -15°">
+                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v5h5M4.6 12a8 8 0 1 0 2-5.7"></path></svg>
+                      </button>
+                      <button type="button" (pointerdown)="$event.stopPropagation()" (click)="$event.stopPropagation(); girarElemento(sel, 15)" class="grid h-6 w-6 place-items-center rounded text-mist transition-colors hover:bg-white/[0.06] hover:text-chalk" title="Girar +15°">
+                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7v5h-5M19.4 12a8 8 0 1 1-2-5.7"></path></svg>
+                      </button>
+                      <span class="h-4 w-px bg-edge"></span>
+                      <button type="button" (pointerdown)="$event.stopPropagation()" (click)="$event.stopPropagation(); duplicarElemento(sel)" class="grid h-6 w-6 place-items-center rounded text-mist transition-colors hover:bg-white/[0.06] hover:text-flow" title="Duplicar (Ctrl+D)">
+                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="1.5" stroke-width="1.8"></rect><path stroke-width="1.8" d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"></path></svg>
+                      </button>
+                      <button type="button" (pointerdown)="$event.stopPropagation()" (click)="$event.stopPropagation(); eliminarElemento(sel)" class="grid h-6 w-6 place-items-center rounded text-mist transition-colors hover:bg-danger/15 hover:text-danger" title="Eliminar (Supr)">
+                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5m4-5v5"></path></svg>
+                      </button>
+                    </div>
+                  }
+
+                  <!-- Estado vacío -->
+                  @if (elementos().length === 0) {
+                    <div class="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center text-center">
+                      <div class="notch-sm grid h-14 w-14 place-items-center border border-signal/25 bg-signal/[0.06] text-signal">
+                        <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <rect x="4" y="4" width="16" height="16" rx="2" stroke-width="1.5"></rect>
+                          <path stroke-linecap="round" stroke-width="1.5" d="M12 8v8M8 12h8"></path>
+                        </svg>
+                      </div>
+                      <h2 class="mt-4 text-base font-semibold text-chalk">El lienzo está vacío</h2>
+                      <p class="mt-1 max-w-xs text-[0.68rem] leading-relaxed text-mist">
+                        Selecciona una herramienta y haz clic aquí, o genera una fila de puestos para empezar.
+                      </p>
+                      <button type="button" (click)="$event.stopPropagation(); generarFila('A', 6)" class="btn btn-signal pointer-events-auto mt-4">
+                        Generar fila de 6
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Badge de herramienta activa -->
+            @if (herramienta() !== 'select') {
+              <div class="pointer-events-none sticky bottom-3 left-1/2 z-30 mx-auto flex w-fit -translate-y-1 items-center gap-2 rounded-full border border-signal/35 bg-void/90 px-3 py-1.5 text-[0.6rem] text-signal shadow-xl backdrop-blur">
+                <span class="h-1.5 w-1.5 rounded-full bg-signal"></span>
+                Colocando {{ tipoEtiqueta(herramienta()) }} · Esc para salir
               </div>
             }
           </div>
-        </div>
+        </section>
 
-        <div class="lg:col-span-3 space-y-5">
-          @if (elementoSeleccionado(); as sel) {
-            <div class="bg-slate-900 border border-blue-500/40 rounded-3xl p-5 shadow-xl space-y-4">
-              <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-                <span class="text-xs font-bold text-white uppercase tracking-wider">Elemento Seleccionado</span>
-                <span class="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-bold uppercase">{{ sel.tipo }}</span>
+        <!-- Inspector -->
+        <aside class="space-y-4 lg:sticky lg:top-24">
+          @if (seleccionado(); as sel) {
+            <div class="panel overflow-hidden">
+              <div class="flex items-center justify-between border-b border-edge px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <span class="h-1.5 w-1.5 rounded-full" [ngClass]="tipoMeta(sel.tipo).dot"></span>
+                  <span class="mono text-[0.54rem] uppercase tracking-[0.16em] text-chalk">Elemento seleccionado</span>
+                </div>
+                <button type="button" (click)="deseleccionar()" class="text-mist transition-colors hover:text-chalk" title="Deseleccionar">
+                  <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-width="2" d="M6 6l12 12M18 6 6 18"></path>
+                  </svg>
+                </button>
               </div>
 
-              <div class="space-y-3">
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-400 mb-1">Identificador / Código</label>
-                  <input
-                    type="text"
-                    [(ngModel)]="sel.codigo"
-                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+              <div class="space-y-4 p-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="text-lg font-semibold leading-none tracking-tight text-chalk">{{ sel.codigo }}</div>
+                    <div class="mono mt-1 text-[0.5rem] uppercase tracking-[0.14em] text-mist">{{ tipoMeta(sel.tipo).label }} · {{ sel.seccion }}</div>
+                  </div>
+                  @if (esPuesto(sel.tipo)) {
+                    <span class="tag" [ngClass]="sel.estado === 'libre' ? 'tag-ok' : 'tag-danger'">{{ sel.estado }}</span>
+                  }
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label class="label">Código</label>
+                    <input
+                      type="text"
+                      class="field field-mono uppercase"
+                      [ngModel]="sel.codigo"
+                      (ngModelChange)="actualizarTexto('codigo', $event)"
+                    />
+                  </div>
+                  <div>
+                    <label class="label">Zona</label>
+                    <input
+                      type="text"
+                      class="field"
+                      [ngModel]="sel.seccion"
+                      (ngModelChange)="actualizarTexto('seccion', $event)"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label class="block text-[11px] font-semibold text-slate-400 mb-1">Sección o Zona</label>
-                  <input
-                    type="text"
-                    [(ngModel)]="sel.seccion"
-                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-400 mb-1">Tipo de Elemento</label>
-                  <select
-                    [(ngModel)]="sel.tipo"
-                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="standard">Casilla Estándar</option>
-                    <option value="discapacitados">♿ Discapacitados</option>
-                    <option value="electrico">⚡ Eléctrico</option>
-                    <option value="entrada">🚗 Entrada</option>
-                    <option value="salida">🚪 Salida</option>
-                    <option value="carril">═ Vía de Circulación</option>
+                  <label class="label">Tipo de elemento</label>
+                  <select class="field" [ngModel]="sel.tipo" (ngModelChange)="cambiarTipo($event)">
+                    @for (t of tipos; track t.id) {
+                      <option [value]="t.id">{{ t.label }}</option>
+                    }
                   </select>
                 </div>
 
-                <div class="pt-2">
-                  <label class="block text-[11px] font-semibold text-slate-400 mb-1.5">Girar / Orientación:</label>
-                  <div class="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      (click)="girarElemento(sel, 90)"
-                      class="py-2 px-3 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-semibold text-blue-300 flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                      </svg>
-                      Girar +90°
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="sel.rotacion = 0"
-                      class="py-2 px-3 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-                    >
-                      Reiniciar (0°)
-                    </button>
+                <div class="border-t border-edge pt-4">
+                  <div class="mb-2 flex items-center justify-between">
+                    <span class="label mb-0">Rotación</span>
+                    <span class="mono text-[0.7rem] font-semibold text-signal">{{ sel.rotacion }}°</span>
                   </div>
-                  <span class="text-[10px] text-slate-500 block mt-1">Ángulo actual: {{ sel.rotacion || 0 }}°</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="359"
+                    step="1"
+                    class="range"
+                    [ngModel]="sel.rotacion"
+                    (ngModelChange)="actualizarRotacion($event)"
+                  />
+                  <div class="mt-2.5 grid grid-cols-4 gap-1.5">
+                    @for (ang of [0, 90, 180, 270]; track ang) {
+                      <button
+                        type="button"
+                        (click)="fijarRotacion(sel, ang)"
+                        class="mono rounded border py-1.5 text-[0.55rem] transition-colors"
+                        [ngClass]="sel.rotacion === ang ? 'border-signal/45 bg-signal/[0.08] text-signal' : 'border-edge text-mist hover:border-edge-strong hover:text-chalk'"
+                      >
+                        {{ ang }}°
+                      </button>
+                    }
+                  </div>
+                  <div class="mt-1.5 grid grid-cols-2 gap-1.5">
+                    <button type="button" (click)="girarElemento(sel, -15)" class="btn btn-ghost h-7 text-[0.55rem]">−15°</button>
+                    <button type="button" (click)="girarElemento(sel, 15)" class="btn btn-ghost h-7 text-[0.55rem]">+15°</button>
+                  </div>
                 </div>
 
-                <div class="pt-3 border-t border-slate-800 flex items-center gap-2">
-                  <button
-                    type="button"
-                    (click)="eliminarElemento(sel)"
-                    class="w-full py-2 bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-                  >
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                <div class="border-t border-edge pt-4">
+                  <div class="mb-2 flex items-center justify-between">
+                    <span class="label mb-0">Posición</span>
+                    <button type="button" (click)="centrarElemento(sel)" class="mono text-[0.52rem] uppercase tracking-[0.1em] text-mist transition-colors hover:text-signal">Centrar</button>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2.5">
+                    <div class="relative">
+                      <span class="mono pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-[0.52rem] text-mist/60">X</span>
+                      <input type="number" class="field field-mono pl-6 text-[0.68rem]" [ngModel]="sel.posX" (ngModelChange)="actualizarPosicion('posX', $event)" />
+                    </div>
+                    <div class="relative">
+                      <span class="mono pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-[0.52rem] text-mist/60">Y</span>
+                      <input type="number" class="field field-mono pl-6 text-[0.68rem]" [ngModel]="sel.posY" (ngModelChange)="actualizarPosicion('posY', $event)" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 border-t border-edge pt-4">
+                  <button type="button" (click)="duplicarElemento(sel)" class="btn btn-ghost h-8 text-[0.6rem]">
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <rect x="8" y="8" width="12" height="12" rx="1.5" stroke-width="1.8"></rect>
+                      <path stroke-width="1.8" d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"></path>
+                    </svg>
+                    Duplicar
+                  </button>
+                  <button type="button" (click)="eliminarElemento(sel)" class="btn btn-danger h-8 text-[0.6rem]">
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5m4-5v5"></path>
                     </svg>
                     Eliminar
                   </button>
@@ -306,45 +562,123 @@ interface ElementoDiseno {
               </div>
             </div>
           } @else {
-            <div class="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 text-center text-slate-400">
-              <div class="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-400 mx-auto flex items-center justify-center mb-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path>
+            <div class="panel p-5 text-center">
+              <div class="notch-sm mx-auto grid h-11 w-11 place-items-center border border-edge bg-white/[0.02] text-mist">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="m5 4 14 6-6 2-2 6-6-14Z"></path>
                 </svg>
               </div>
-              <h4 class="text-xs font-bold text-white">Selecciona un elemento</h4>
-              <p class="text-[11px] text-slate-500 mt-1">Haz clic en una casilla del plano para girarla, cambiar su código o eliminarla.</p>
+              <h2 class="mt-3 text-sm font-semibold text-chalk">Selecciona un elemento</h2>
+              <p class="mt-1 text-[0.65rem] leading-relaxed text-mist">
+                Haz clic en una casilla, entrada o carril para editar su código, rotación y posición exacta.
+              </p>
             </div>
           }
 
-          <div class="bg-slate-900/60 border border-slate-800 rounded-3xl p-5 text-xs text-slate-400 space-y-2">
-            <h4 class="font-bold text-slate-300 uppercase tracking-wider text-[11px]">Instrucciones:</h4>
-            <p>• <strong>Arrastrar:</strong> Haz clic sostenido en cualquier puesto o carril para moverlo a su posición real.</p>
-            <p>• <strong>Girar:</strong> Selecciona el elemento y usa el botón <em>Girar +90°</em> para orientarlo vertical u horizontalmente.</p>
-            <p>• <strong>Guardar:</strong> Cuando termines de organizar, pulsa <em>Guardar Plano</em> arriba.</p>
+          <!-- Leyenda / capas -->
+          <div class="panel p-4">
+            <div class="mb-3 flex items-center justify-between">
+              <span class="mono text-[0.54rem] uppercase tracking-[0.16em] text-chalk">Capas del plano</span>
+              <span class="mono text-[0.5rem] text-mist">{{ elementos().length }} total</span>
+            </div>
+            <div class="space-y-1.5">
+              @for (t of tipos; track t.id) {
+                <div class="flex items-center justify-between rounded border border-transparent px-1.5 py-1 text-[0.62rem] text-mist transition-colors hover:border-edge hover:bg-white/[0.02]">
+                  <span class="flex items-center gap-2">
+                    <span class="h-1.5 w-1.5 rounded-full" [ngClass]="t.dot"></span>
+                    {{ t.label }}
+                  </span>
+                  <span class="mono text-chalk">{{ conteos()[t.id] }}</span>
+                </div>
+              }
+            </div>
           </div>
-        </div>
+
+          <!-- Atajos -->
+          <div class="panel-flat p-4">
+            <div class="mb-2.5 flex items-center gap-2">
+              <svg class="h-3.5 w-3.5 text-signal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9" stroke-width="1.6"></circle>
+                <path stroke-linecap="round" stroke-width="1.6" d="M12 11v5m0-8.5v.01"></path>
+              </svg>
+              <span class="mono text-[0.52rem] uppercase tracking-[0.16em] text-mist">Atajos del editor</span>
+            </div>
+            <div class="space-y-1.5 text-[0.6rem] text-mist">
+              <div class="flex items-center justify-between"><span>Mover 10 px</span><span class="flex gap-1"><kbd class="node-key">←</kbd><kbd class="node-key">↑</kbd><kbd class="node-key">↓</kbd><kbd class="node-key">→</kbd></span></div>
+              <div class="flex items-center justify-between"><span>Mover 1 px</span><span class="flex gap-1"><kbd class="node-key">Shift</kbd><span class="self-center text-mist/50">+</span><kbd class="node-key">←</kbd></span></div>
+              <div class="flex items-center justify-between"><span>Girar 15°</span><kbd class="node-key">R</kbd></div>
+              <div class="flex items-center justify-between"><span>Duplicar</span><span class="flex items-center gap-1"><kbd class="node-key">Ctrl</kbd><kbd class="node-key">D</kbd></span></div>
+              <div class="flex items-center justify-between"><span>Eliminar</span><kbd class="node-key">Supr</kbd></div>
+              <div class="flex items-center justify-between"><span>Guardar</span><span class="flex items-center gap-1"><kbd class="node-key">Ctrl</kbd><kbd class="node-key">S</kbd></span></div>
+            </div>
+          </div>
+        </aside>
       </div>
     </main>
   `
 })
-export class DisenadorMapaComponent implements OnInit {
+export class DisenadorMapaComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private casillaService = inject(CasillaService);
   private organizacionService = inject(OrganizacionService);
 
+  readonly ANCHO = 1200;
+  readonly ALTO = 720;
+
   organizacionId = signal<string>('');
   organizacion = signal<Organizacion | null>(null);
   elementos = signal<ElementoDiseno[]>([]);
-  elementoSeleccionado = signal<ElementoDiseno | null>(null);
+  seleccionadoId = signal<string | null>(null);
+
+  herramienta = signal<TipoElemento | 'select'>('select');
+  zoom = signal<number>(0.7);
+  snap = signal<boolean>(true);
+  mostrarGrilla = signal<boolean>(true);
+  cursorPos = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
   guardando = signal<boolean>(false);
-  mensajeFeedback = signal<string | null>(null);
+  hayCambios = signal<boolean>(false);
+  feedback = signal<Feedback | null>(null);
 
-  private arrastrando = false;
-  private elemArrastrado: ElementoDiseno | null = null;
-  private offsetX = 0;
-  private offsetY = 0;
+  tipos: Array<{ id: TipoElemento; label: string; dot: string }> = [
+    { id: 'standard', label: 'Estándar', dot: 'bg-ok' },
+    { id: 'discapacitados', label: 'Movilidad', dot: 'bg-flow' },
+    { id: 'electrico', label: 'Eléctrico', dot: 'bg-warn' },
+    { id: 'entrada', label: 'Entrada', dot: 'bg-ok' },
+    { id: 'salida', label: 'Salida', dot: 'bg-danger' },
+    { id: 'carril', label: 'Carril', dot: 'bg-mist' }
+  ];
+
+  seleccionado = computed(() => {
+    const id = this.seleccionadoId();
+    return id ? this.elementos().find((e) => e.uid === id) ?? null : null;
+  });
+
+  conteos = computed<Record<TipoElemento, number>>(() => {
+    const base: Record<TipoElemento, number> = {
+      standard: 0,
+      discapacitados: 0,
+      electrico: 0,
+      entrada: 0,
+      salida: 0,
+      carril: 0
+    };
+    for (const elem of this.elementos()) base[elem.tipo]++;
+    return base;
+  });
+
+  libresCount = computed(() => this.elementos().filter((e) => this.esPuesto(e.tipo) && e.estado === 'libre').length);
+  ocupadasCount = computed(() => this.elementos().filter((e) => this.esPuesto(e.tipo) && e.estado === 'ocupado').length);
+  zoomPorcentaje = computed(() => Math.round(this.zoom() * 100));
+
+  private modo: 'mover' | 'rotar' | null = null;
+  private uidActivo = '';
+  private punteroInicio = { x: 0, y: 0 };
+  private posicionInicial = { x: 0, y: 0 };
+  private rotacionInicial = 0;
+  private anguloInicial = 0;
+  private centroRotacion = { x: 0, y: 0 };
+  private huboMovimiento = false;
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -354,13 +688,21 @@ export class DisenadorMapaComponent implements OnInit {
       this.cargarCasillas(id);
     }
 
-    window.addEventListener('mousemove', (e) => this.alMoverRaton(e));
-    window.addEventListener('mouseup', () => this.alSoltarRaton());
+    window.addEventListener('pointermove', this.alMoverGlobal);
+    window.addEventListener('pointerup', this.alSoltarGlobal);
+    window.addEventListener('keydown', this.alPresionarTecla);
   }
 
+  ngOnDestroy(): void {
+    window.removeEventListener('pointermove', this.alMoverGlobal);
+    window.removeEventListener('pointerup', this.alSoltarGlobal);
+    window.removeEventListener('keydown', this.alPresionarTecla);
+  }
+
+  // ── Carga ────────────────────────────────────────────────────────
   cargarOrganizacion(id: string): void {
-    this.organizacionService.misOrganizaciones().subscribe(orgs => {
-      const match = orgs.find(o => o._id === id);
+    this.organizacionService.misOrganizaciones().subscribe((orgs) => {
+      const match = orgs.find((o) => o._id === id);
       if (match) this.organizacion.set(match);
     });
   }
@@ -368,195 +710,567 @@ export class DisenadorMapaComponent implements OnInit {
   cargarCasillas(orgId: string): void {
     this.casillaService.listarPorOrganizacion(orgId).subscribe({
       next: (data) => {
-        const elems: ElementoDiseno[] = data.map((c, i) => ({
-          _id: c._id,
-          codigo: c.codigo,
-          seccion: c.seccion || 'Sección A',
-          tipo: (c.tipo as any) || 'standard',
-          estado: c.estado || 'libre',
-          posX: c.posX !== undefined ? c.posX : 50 + (i % 8) * 100,
-          posY: c.posY !== undefined ? c.posY : 50 + Math.floor(i / 8) * 90,
-          rotacion: c.rotacion || 0
-        }));
+        const ocupadas = new Set<string>();
+        let autoIndice = 0;
+
+        const siguienteAuto = (): { x: number; y: number } => {
+          for (let i = 0; i < 140; i++) {
+            const col = autoIndice % 10;
+            const fila = Math.floor(autoIndice / 10);
+            autoIndice++;
+            const x = 70 + col * 105;
+            const y = 70 + fila * 130;
+            if (!ocupadas.has(`${x},${y}`) && y < this.ALTO - 120) return { x, y };
+          }
+          return { x: 70, y: 70 };
+        };
+
+        const elems: ElementoDiseno[] = data.map((c: Casilla, i) => {
+          let posX = typeof c.posX === 'number' ? c.posX : 0;
+          let posY = typeof c.posY === 'number' ? c.posY : 0;
+
+          const sinUbicacion = (posX === 0 && posY === 0) || ocupadas.has(`${posX},${posY}`);
+          if (sinUbicacion) {
+            const pos = siguienteAuto();
+            posX = pos.x;
+            posY = pos.y;
+          }
+
+          posX = Math.max(0, Math.min(posX, this.ANCHO - this.anchoTipo(c.tipo)));
+          posY = Math.max(0, Math.min(posY, this.ALTO - this.altoTipo(c.tipo)));
+          ocupadas.add(`${posX},${posY}`);
+
+          return {
+            uid: c._id || `el-${i}-${Math.random().toString(36).slice(2, 7)}`,
+            _id: c._id,
+            codigo: c.codigo,
+            seccion: c.seccion || 'Sección A',
+            tipo: (c.tipo as TipoElemento) || 'standard',
+            estado: c.estado || 'libre',
+            posX,
+            posY,
+            rotacion: c.rotacion || 0,
+            esNuevo: false
+          };
+        });
+
         this.elementos.set(elems);
+        this.seleccionadoId.set(null);
+        this.hayCambios.set(false);
       },
-      error: () => this.elementos.set([])
+      error: () => {
+        this.elementos.set([]);
+        this.feedback.set({ tipo: 'error', texto: 'No se pudieron cargar las casillas de esta sede.' });
+      }
     });
   }
 
-  agregarElemento(tipo: 'standard' | 'discapacitados' | 'electrico' | 'entrada' | 'salida' | 'carril'): void {
-    const total = this.elementos().length;
-    let codigo = '';
-    let seccion = 'Sección A';
-
-    if (tipo === 'entrada') {
-      codigo = 'ENTRADA';
-      seccion = 'Acceso';
-    } else if (tipo === 'salida') {
-      codigo = 'SALIDA';
-      seccion = 'Acceso';
-    } else if (tipo === 'carril') {
-      codigo = 'VÍA';
-      seccion = 'Circulación';
-    } else {
-      const num = total + 1;
-      codigo = `P-${num}`;
+  // ── Añadir / duplicar / eliminar ─────────────────────────────────
+  seleccionarHerramienta(tipo: TipoElemento | 'select'): void {
+    this.herramienta.set(tipo);
+    if (tipo === 'select') {
+      this.feedback.set(null);
     }
+  }
 
-    const nuevo: ElementoDiseno = {
-      codigo,
-      seccion,
-      tipo,
-      estado: 'libre',
-      posX: 80 + (total % 6) * 110,
-      posY: 80 + Math.floor(total / 6) * 95,
-      rotacion: 0,
-      esNuevo: true
-    };
-
-    this.elementos.update(list => [...list, nuevo]);
-    this.elementoSeleccionado.set(nuevo);
+  agregarElemento(tipo: TipoElemento): void {
+    const pos = this.posicionLibre();
+    const nuevo = this.crearElemento(tipo, pos.x, pos.y);
+    this.elementos.update((lista) => [...lista, nuevo]);
+    this.seleccionadoId.set(nuevo.uid);
+    this.hayCambios.set(true);
+    this.herramienta.set(tipo);
   }
 
   generarFila(letra: string, cantidad: number): void {
-    const list = [...this.elementos()];
-    const startY = 100 + (list.length % 3) * 120;
-
-    for (let i = 1; i <= cantidad; i++) {
-      list.push({
-        codigo: `${letra}${i}`,
-        seccion: `Sección ${letra}`,
-        tipo: 'standard',
-        estado: 'libre',
-        posX: 60 + (i - 1) * 95,
-        posY: startY,
-        rotacion: 0,
-        esNuevo: true
-      });
+    const nuevos: ElementoDiseno[] = [];
+    for (let i = 0; i < cantidad; i++) {
+      const pos = this.posicionLibre();
+      const nuevo = this.crearElemento('standard', pos.x, pos.y);
+      nuevo.seccion = `Sección ${letra}`;
+      nuevos.push(nuevo);
+      this.elementos.update((lista) => [...lista, nuevo]);
     }
-
-    this.elementos.set(list);
-    this.mensajeFeedback.set(`Se agregaron ${cantidad} casillas a la Sección ${letra}.`);
+    if (nuevos.length > 0) {
+      this.seleccionadoId.set(nuevos[nuevos.length - 1].uid);
+      this.hayCambios.set(true);
+      this.feedback.set({ tipo: 'ok', texto: `Se agregaron ${cantidad} casillas a la Sección ${letra}.` });
+    }
   }
 
-  seleccionarElemento(elem: ElementoDiseno): void {
-    this.elementoSeleccionado.set(elem);
-  }
-
-  deseleccionar(): void {
-    this.elementoSeleccionado.set(null);
-  }
-
-  girarElemento(elem: ElementoDiseno, grados: number): void {
-    elem.rotacion = ((elem.rotacion || 0) + grados) % 360;
+  duplicarElemento(elem: ElementoDiseno): void {
+    const copia: ElementoDiseno = {
+      ...elem,
+      uid: this.nuevoUid(),
+      _id: undefined,
+      codigo: this.siguienteCodigo(elem.tipo),
+      posX: Math.min(elem.posX + 26, this.ANCHO - this.anchoDe(elem)),
+      posY: Math.min(elem.posY + 26, this.ALTO - this.altoDe(elem)),
+      esNuevo: true
+    };
+    this.elementos.update((lista) => [...lista, copia]);
+    this.seleccionadoId.set(copia.uid);
+    this.hayCambios.set(true);
+    this.feedback.set({ tipo: 'ok', texto: `Elemento duplicado como ${copia.codigo}.` });
   }
 
   eliminarElemento(elem: ElementoDiseno): void {
-    if (elem._id) {
-      this.casillaService.eliminarCasilla(elem._id).subscribe({
-        next: () => {
-          this.elementos.update(list => list.filter(e => e !== elem));
-          this.elementoSeleccionado.set(null);
-          this.mensajeFeedback.set(`Elemento ${elem.codigo} eliminado.`);
-        },
-        error: (err) => alert(err.error?.message || 'Error al eliminar casilla.')
-      });
-    } else {
-      this.elementos.update(list => list.filter(e => e !== elem));
-      this.elementoSeleccionado.set(null);
-    }
-  }
+    if (this.removiendo) return;
 
-  iniciarArrastre(event: MouseEvent, elem: ElementoDiseno): void {
-    event.stopPropagation();
-    this.arrastrando = true;
-    this.elemArrastrado = elem;
-    this.elementoSeleccionado.set(elem);
+    const quitar = () => {
+      this.elementos.update((lista) => lista.filter((e) => e.uid !== elem.uid));
+      if (this.seleccionadoId() === elem.uid) this.seleccionadoId.set(null);
+      this.hayCambios.set(true);
+      this.feedback.set({ tipo: 'ok', texto: `Elemento ${elem.codigo} eliminado del plano.` });
+    };
 
-    const canvas = document.getElementById('lienzo-diseno');
-    if (canvas) {
-      const rect = canvas.getBoundingClientRect();
-      this.offsetX = event.clientX - rect.left - elem.posX;
-      this.offsetY = event.clientY - rect.top - elem.posY;
-    }
-  }
-
-  private alMoverRaton(event: MouseEvent): void {
-    if (!this.arrastrando || !this.elemArrastrado) return;
-
-    const canvas = document.getElementById('lienzo-diseno');
-    if (canvas) {
-      const rect = canvas.getBoundingClientRect();
-      let rawX = event.clientX - rect.left - this.offsetX;
-      let rawY = event.clientY - rect.top - this.offsetY;
-
-      // Snap to grid (malla de 15px)
-      rawX = Math.round(rawX / 15) * 15;
-      rawY = Math.round(rawY / 15) * 15;
-
-      this.elemArrastrado.posX = Math.max(10, Math.min(rawX, 1100));
-      this.elemArrastrado.posY = Math.max(10, Math.min(rawY, 700));
-    }
-  }
-
-  private alSoltarRaton(): void {
-    this.arrastrando = false;
-    this.elemArrastrado = null;
-  }
-
-  guardarDiseno(): void {
-    const orgId = this.organizacionId();
-    if (!orgId) return;
-
-    this.guardando.set(true);
-    this.mensajeFeedback.set(null);
-
-    const elems = this.elementos();
-    let completados = 0;
-    const total = elems.length;
-
-    if (total === 0) {
-      this.guardando.set(false);
-      this.mensajeFeedback.set('Plano guardado (sin elementos).');
+    if (!elem._id) {
+      quitar();
       return;
     }
 
-    const revisarFin = () => {
-      completados++;
-      if (completados >= total) {
-        this.guardando.set(false);
-        this.mensajeFeedback.set('¡Plano del parqueadero guardado con éxito! Se sincronizó con la app del conductor.');
-        this.cargarCasillas(orgId);
+    this.removiendo = true;
+    this.casillaService.eliminarCasilla(elem._id).subscribe({
+      next: () => {
+        this.removiendo = false;
+        quitar();
+      },
+      error: (err) => {
+        this.removiendo = false;
+        this.feedback.set({ tipo: 'error', texto: err.error?.message || `No se pudo eliminar ${elem.codigo}.` });
       }
-    };
+    });
+  }
 
-    for (let el of elems) {
-      if (el._id) {
-        this.casillaService.editarCasilla(el._id, {
-          codigo: el.codigo,
-          seccion: el.seccion,
-          tipo: el.tipo,
-          posX: el.posX,
-          posY: el.posY,
-          rotacion: el.rotacion
-        }).subscribe({
-          next: () => revisarFin(),
-          error: () => revisarFin()
-        });
-      } else {
-        this.casillaService.crearCasilla({
-          organizacion: orgId,
-          codigo: el.codigo,
-          seccion: el.seccion,
-          tipo: el.tipo,
-          posX: el.posX,
-          posY: el.posY,
-          rotacion: el.rotacion
-        }).subscribe({
-          next: () => revisarFin(),
-          error: () => revisarFin()
-        });
+  private removiendo = false;
+
+  // ── Interacción en el lienzo ─────────────────────────────────────
+  alClickLienzo(event: MouseEvent): void {
+    const tipo = this.herramienta();
+    if (tipo === 'select') {
+      this.deseleccionar();
+      return;
+    }
+
+    const superficie = this.superficie();
+    if (!superficie) return;
+
+    const rect = superficie.getBoundingClientRect();
+    const zoom = this.zoom();
+    const ancho = this.anchoTipo(tipo);
+    const alto = this.altoTipo(tipo);
+
+    let posX = (event.clientX - rect.left) / zoom - ancho / 2;
+    let posY = (event.clientY - rect.top) / zoom - alto / 2;
+
+    if (this.snap()) {
+      posX = Math.round(posX / 10) * 10;
+      posY = Math.round(posY / 10) * 10;
+    }
+
+    posX = Math.max(0, Math.min(posX, this.ANCHO - ancho));
+    posY = Math.max(0, Math.min(posY, this.ALTO - alto));
+
+    const nuevo = this.crearElemento(tipo, posX, posY);
+    this.elementos.update((lista) => [...lista, nuevo]);
+    this.seleccionadoId.set(nuevo.uid);
+    this.hayCambios.set(true);
+    this.feedback.set(null);
+  }
+
+  alMoverSobreLienzo(event: PointerEvent): void {
+    const superficie = this.superficie();
+    if (!superficie) return;
+    const rect = superficie.getBoundingClientRect();
+    const zoom = this.zoom();
+    this.cursorPos.set({
+      x: Math.max(0, Math.round((event.clientX - rect.left) / zoom)),
+      y: Math.max(0, Math.round((event.clientY - rect.top) / zoom))
+    });
+  }
+
+  seleccionarElemento(elem: ElementoDiseno): void {
+    this.seleccionadoId.set(elem.uid);
+  }
+
+  deseleccionar(): void {
+    this.seleccionadoId.set(null);
+  }
+
+  iniciarArrastre(event: PointerEvent, elem: ElementoDiseno): void {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    this.seleccionadoId.set(elem.uid);
+    this.modo = 'mover';
+    this.uidActivo = elem.uid;
+    this.punteroInicio = { x: event.clientX, y: event.clientY };
+    this.posicionInicial = { x: elem.posX, y: elem.posY };
+    this.huboMovimiento = false;
+  }
+
+  iniciarRotacion(event: PointerEvent, elem: ElementoDiseno): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const superficie = this.superficie();
+    if (!superficie) return;
+
+    const rect = superficie.getBoundingClientRect();
+    const zoom = this.zoom();
+    const centroX = rect.left + (elem.posX + this.anchoDe(elem) / 2) * zoom;
+    const centroY = rect.top + (elem.posY + this.altoDe(elem) / 2) * zoom;
+
+    this.seleccionadoId.set(elem.uid);
+    this.modo = 'rotar';
+    this.uidActivo = elem.uid;
+    this.centroRotacion = { x: centroX, y: centroY };
+    this.anguloInicial = (Math.atan2(event.clientY - centroY, event.clientX - centroX) * 180) / Math.PI;
+    this.rotacionInicial = elem.rotacion || 0;
+    this.huboMovimiento = false;
+  }
+
+  private alMoverGlobal = (event: PointerEvent): void => {
+    if (!this.modo) return;
+
+    const elem = this.elementos().find((e) => e.uid === this.uidActivo);
+    if (!elem) return;
+
+    if (this.modo === 'mover') {
+      const zoom = this.zoom();
+      let posX = this.posicionInicial.x + (event.clientX - this.punteroInicio.x) / zoom;
+      let posY = this.posicionInicial.y + (event.clientY - this.punteroInicio.y) / zoom;
+
+      if (this.snap()) {
+        posX = Math.round(posX / 10) * 10;
+        posY = Math.round(posY / 10) * 10;
+      }
+
+      posX = Math.max(0, Math.min(posX, this.ANCHO - this.anchoDe(elem)));
+      posY = Math.max(0, Math.min(posY, this.ALTO - this.altoDe(elem)));
+
+      if (posX !== elem.posX || posY !== elem.posY) {
+        this.actualizarElemento(elem.uid, { posX, posY });
+        this.huboMovimiento = true;
+      }
+    } else {
+      const anguloActual = (Math.atan2(event.clientY - this.centroRotacion.y, event.clientX - this.centroRotacion.x) * 180) / Math.PI;
+      let nueva = this.rotacionInicial + (anguloActual - this.anguloInicial);
+      if (event.shiftKey) nueva = Math.round(nueva / 15) * 15;
+      nueva = ((Math.round(nueva) % 360) + 360) % 360;
+
+      if (nueva !== elem.rotacion) {
+        this.actualizarElemento(elem.uid, { rotacion: nueva });
+        this.huboMovimiento = true;
       }
     }
+  };
+
+  private alSoltarGlobal = (): void => {
+    if (this.modo && this.huboMovimiento) this.hayCambios.set(true);
+    this.modo = null;
+    this.uidActivo = '';
+    this.huboMovimiento = false;
+  };
+
+  private alPresionarTecla = (event: KeyboardEvent): void => {
+    const objetivo = event.target as HTMLElement | null;
+    if (objetivo && (['INPUT', 'TEXTAREA', 'SELECT'].includes(objetivo.tagName) || objetivo.isContentEditable)) return;
+
+    if (event.key === 'Escape') {
+      this.herramienta.set('select');
+      this.deseleccionar();
+      return;
+    }
+
+    const sel = this.seleccionado();
+    if (!sel) return;
+
+    if (event.ctrlKey || event.metaKey) {
+      const tecla = event.key.toLowerCase();
+      if (tecla === 'd') {
+        event.preventDefault();
+        this.duplicarElemento(sel);
+      } else if (tecla === 's') {
+        event.preventDefault();
+        this.guardarDiseno();
+      }
+      return;
+    }
+
+    switch (event.key) {
+      case 'ArrowLeft':
+      case 'ArrowRight':
+      case 'ArrowUp':
+      case 'ArrowDown': {
+        event.preventDefault();
+        const paso = event.shiftKey ? 1 : 10;
+        const dx = event.key === 'ArrowLeft' ? -paso : event.key === 'ArrowRight' ? paso : 0;
+        const dy = event.key === 'ArrowUp' ? -paso : event.key === 'ArrowDown' ? paso : 0;
+        this.moverElemento(sel, dx, dy);
+        break;
+      }
+      case 'Delete':
+      case 'Backspace':
+        event.preventDefault();
+        this.eliminarElemento(sel);
+        break;
+      case 'r':
+      case 'R':
+        event.preventDefault();
+        this.girarElemento(sel, event.shiftKey ? -15 : 15);
+        break;
+    }
+  };
+
+  // ── Edición de propiedades ───────────────────────────────────────
+  actualizarElemento(uid: string, cambios: Partial<ElementoDiseno>): void {
+    this.elementos.update((lista) => lista.map((e) => (e.uid === uid ? { ...e, ...cambios } : e)));
+  }
+
+  actualizarTexto(campo: 'codigo' | 'seccion', valor: string): void {
+    const sel = this.seleccionado();
+    if (!sel) return;
+    this.actualizarElemento(sel.uid, { [campo]: valor } as Partial<ElementoDiseno>);
+    this.hayCambios.set(true);
+  }
+
+  cambiarTipo(tipo: TipoElemento): void {
+    const sel = this.seleccionado();
+    if (!sel) return;
+    const posX = Math.max(0, Math.min(sel.posX, this.ANCHO - this.anchoTipo(tipo)));
+    const posY = Math.max(0, Math.min(sel.posY, this.ALTO - this.altoTipo(tipo)));
+    this.actualizarElemento(sel.uid, { tipo, posX, posY });
+    this.hayCambios.set(true);
+  }
+
+  actualizarRotacion(valor: string | number): void {
+    const sel = this.seleccionado();
+    if (!sel) return;
+    const numero = Number(valor);
+    if (Number.isNaN(numero)) return;
+    this.actualizarElemento(sel.uid, { rotacion: ((Math.round(numero) % 360) + 360) % 360 });
+    this.hayCambios.set(true);
+  }
+
+  fijarRotacion(elem: ElementoDiseno, grados: number): void {
+    this.actualizarElemento(elem.uid, { rotacion: ((grados % 360) + 360) % 360 });
+    this.hayCambios.set(true);
+  }
+
+  girarElemento(elem: ElementoDiseno, grados: number): void {
+    const rotacion = (((elem.rotacion || 0) + grados) % 360 + 360) % 360;
+    this.actualizarElemento(elem.uid, { rotacion });
+    this.hayCambios.set(true);
+  }
+
+  actualizarPosicion(campo: 'posX' | 'posY', valor: string | number): void {
+    const sel = this.seleccionado();
+    if (!sel) return;
+    const numero = Number(valor);
+    if (Number.isNaN(numero)) return;
+    const limite = campo === 'posX' ? this.ANCHO - this.anchoDe(sel) : this.ALTO - this.altoDe(sel);
+    this.actualizarElemento(sel.uid, { [campo]: Math.max(0, Math.min(Math.round(numero), limite)) } as Partial<ElementoDiseno>);
+    this.hayCambios.set(true);
+  }
+
+  centrarElemento(elem: ElementoDiseno): void {
+    this.actualizarElemento(elem.uid, {
+      posX: Math.round((this.ANCHO - this.anchoDe(elem)) / 2),
+      posY: Math.round((this.ALTO - this.altoDe(elem)) / 2)
+    });
+    this.hayCambios.set(true);
+  }
+
+  private moverElemento(elem: ElementoDiseno, dx: number, dy: number): void {
+    const posX = Math.max(0, Math.min(elem.posX + dx, this.ANCHO - this.anchoDe(elem)));
+    const posY = Math.max(0, Math.min(elem.posY + dy, this.ALTO - this.altoDe(elem)));
+    this.actualizarElemento(elem.uid, { posX, posY });
+    this.hayCambios.set(true);
+  }
+
+  // ── Zoom ─────────────────────────────────────────────────────────
+  cambiarZoom(delta: number): void {
+    this.zoom.set(Math.max(0.4, Math.min(1.5, Number((this.zoom() + delta).toFixed(2)))));
+  }
+
+  resetZoom(): void {
+    this.zoom.set(0.7);
+  }
+
+  // ── Guardar ──────────────────────────────────────────────────────
+  guardarDiseno(): void {
+    const orgId = this.organizacionId();
+    if (!orgId || this.guardando()) return;
+
+    const elems = this.elementos();
+    if (elems.length === 0) {
+      this.feedback.set({ tipo: 'warn', texto: 'El plano está vacío. Agrega al menos una casilla antes de guardar.' });
+      return;
+    }
+
+    const codigoVacio = elems.find((e) => !e.codigo.trim() || !e.seccion.trim());
+    if (codigoVacio) {
+      this.feedback.set({ tipo: 'error', texto: 'Todos los elementos necesitan un código y una zona.' });
+      this.seleccionadoId.set(codigoVacio.uid);
+      return;
+    }
+
+    this.guardando.set(true);
+    this.feedback.set(null);
+
+    const solicitudes = elems.map((elem) => {
+      const payload = {
+        codigo: elem.codigo.trim(),
+        seccion: elem.seccion.trim(),
+        tipo: elem.tipo,
+        posX: Math.round(elem.posX),
+        posY: Math.round(elem.posY),
+        rotacion: Math.round(elem.rotacion)
+      };
+
+      if (elem._id) {
+        return this.casillaService.editarCasilla(elem._id, payload).pipe(
+          map(() => ({ ok: true, uid: elem.uid, casilla: null as Casilla | null })),
+          catchError(() => of({ ok: false, uid: elem.uid, casilla: null as Casilla | null }))
+        );
+      }
+
+      return this.casillaService.crearCasilla({ organizacion: orgId, ...payload }).pipe(
+        map((res: any) => ({ ok: true, uid: elem.uid, casilla: (res?.casilla ?? null) as Casilla | null })),
+        catchError(() => of({ ok: false, uid: elem.uid, casilla: null as Casilla | null }))
+      );
+    });
+
+    forkJoin(solicitudes).subscribe((resultados) => {
+      const lista = [...this.elementos()];
+      let fallos = 0;
+
+      resultados.forEach((res) => {
+        if (!res.ok) {
+          fallos++;
+          return;
+        }
+        if (res.casilla) {
+          const indice = lista.findIndex((e) => e.uid === res.uid);
+          if (indice >= 0) {
+            lista[indice] = {
+              ...lista[indice],
+              _id: res.casilla._id,
+              esNuevo: false,
+              estado: (res.casilla.estado as 'libre' | 'ocupado') || lista[indice].estado
+            };
+          }
+        }
+      });
+
+      this.elementos.set(lista);
+      this.guardando.set(false);
+
+      if (fallos === 0) {
+        this.hayCambios.set(false);
+        this.feedback.set({ tipo: 'ok', texto: 'Plano guardado y sincronizado con la vista del conductor.' });
+      } else {
+        this.feedback.set({
+          tipo: 'warn',
+          texto: `${fallos} elemento(s) no se pudieron guardar. Revisa el límite de puestos de la sede y vuelve a intentar.`
+        });
+      }
+    });
+  }
+
+  // ── Utilidades ───────────────────────────────────────────────────
+  tipoMeta(tipo: TipoElemento): { id: TipoElemento; label: string; dot: string } {
+    return this.tipos.find((t) => t.id === tipo) ?? this.tipos[0];
+  }
+
+  tipoEtiqueta(tipo: TipoElemento | 'select'): string {
+    if (tipo === 'select') return 'selección';
+    return this.tipoMeta(tipo).label.toLowerCase();
+  }
+
+  esPuesto(tipo: TipoElemento): boolean {
+    return tipo === 'standard' || tipo === 'discapacitados' || tipo === 'electrico';
+  }
+
+  anchoDe(elem: ElementoDiseno): number {
+    return this.anchoTipo(elem.tipo);
+  }
+
+  altoDe(elem: ElementoDiseno): number {
+    return this.altoTipo(elem.tipo);
+  }
+
+  private anchoTipo(tipo: TipoElemento): number {
+    if (tipo === 'carril') return 360;
+    if (tipo === 'entrada' || tipo === 'salida') return 132;
+    return 88;
+  }
+
+  private altoTipo(tipo: TipoElemento): number {
+    if (tipo === 'carril') return 84;
+    if (tipo === 'entrada' || tipo === 'salida') return 84;
+    return 120;
+  }
+
+  private posicionLibre(): { x: number; y: number } {
+    const ocupadas = new Set(this.elementos().map((e) => `${Math.round(e.posX / 10)},${Math.round(e.posY / 10)}`));
+    for (let i = 0; i < 160; i++) {
+      const col = i % 10;
+      const fila = Math.floor(i / 10);
+      const x = 70 + col * 105;
+      const y = 70 + fila * 130;
+      if (y > this.ALTO - 130) break;
+      if (!ocupadas.has(`${Math.round(x / 10)},${Math.round(y / 10)}`)) return { x, y };
+    }
+    return { x: 70, y: 70 };
+  }
+
+  private crearElemento(tipo: TipoElemento, posX: number, posY: number): ElementoDiseno {
+    const seccionPorTipo: Record<TipoElemento, string> = {
+      standard: 'Sección A',
+      discapacitados: 'Sección A',
+      electrico: 'Sección A',
+      entrada: 'Acceso',
+      salida: 'Acceso',
+      carril: 'Circulación'
+    };
+
+    return {
+      uid: this.nuevoUid(),
+      codigo: this.siguienteCodigo(tipo),
+      seccion: seccionPorTipo[tipo],
+      tipo,
+      estado: 'libre',
+      posX,
+      posY,
+      rotacion: 0,
+      esNuevo: true
+    };
+  }
+
+  private siguienteCodigo(tipo: TipoElemento): string {
+    const prefix: Record<TipoElemento, string> = {
+      standard: 'P',
+      discapacitados: 'D',
+      electrico: 'E',
+      entrada: 'ENT',
+      salida: 'SAL',
+      carril: 'VIA'
+    };
+    const usados = new Set(this.elementos().map((e) => e.codigo.trim().toUpperCase()));
+    let numero = 1;
+    while (usados.has(`${prefix[tipo]}-${String(numero).padStart(2, '0')}`)) numero++;
+    return `${prefix[tipo]}-${String(numero).padStart(2, '0')}`;
+  }
+
+  private nuevoUid(): string {
+    return `el-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  private superficie(): HTMLElement | null {
+    return document.getElementById('plan-surface');
   }
 }

@@ -52,13 +52,17 @@ export interface Reserva {
 
 export interface AlertaReserva {
   _id: string;
+  reserva?: string;
   placa: string;
   horaInicio: string;
+  horaFin?: string;
   duracionHoras: number;
   casilla: {
     _id: string;
     codigo: string;
     seccion: string;
+    tipo?: string;
+    estado?: string;
   };
   usuario: {
     _id: string;
@@ -66,6 +70,7 @@ export interface AlertaReserva {
     apellido: string;
     telefono: string;
   };
-  horasTranscurridas?: number;
+  horasVencidas?: number;
   horasExcedidas?: number;
+  zonaHoraria?: string;
 }

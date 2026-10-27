@@ -45,7 +45,10 @@ function crearCasilla(req, resp) {
                         return resp.status(400).send({ "message": "Ya existe una casilla con ese codigo en esa seccion" });
                     }
 
-                    Casillas.countDocuments({ "organizacion": organizacion._id }).then(
+                    Casillas.countDocuments({
+                        "organizacion": organizacion._id,
+                        "tipo": { $in: ['standard', 'discapacitados', 'electrico'] }
+                    }).then(
                         (casillasExistentes) => {
                             if (casillasExistentes >= organizacion.totalPuestos) {
                                 return resp.status(400).send({ "message": "La organizacion ya tiene sus " + organizacion.totalPuestos + " puestos definidos" });

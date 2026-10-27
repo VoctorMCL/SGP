@@ -13,6 +13,10 @@ export class AuthService {
   private router = inject(Router);
 
   private tokenKey = 'sgp_token';
+  private readyResolve!: () => void;
+  /** Se resuelve cuando termina la carga inicial del perfil (o no hay sesión). */
+  readonly ready = new Promise<void>((resolve) => (this.readyResolve = resolve));
+
   currentUser = signal<Usuario | null>(null);
   isAuthenticated = computed(() => !!this.currentUser());
   userRole = computed(() => this.currentUser()?.rol ?? null);
@@ -23,16 +27,25 @@ export class AuthService {
 
   cargarUsuarioInicial(): void {
     const token = this.getToken();
-    if (token) {
-      this.getPerfil().subscribe({
-        next: (res: any) => {
-          this.currentUser.set(res.usuario);
-        },
-        error: () => {
+    if (!token) {
+      this.readyResolve();
+      return;
+    }
+
+    this.getPerfil().subscribe({
+      next: (res: any) => {
+        this.currentUser.set(res.usuario);
+        this.readyResolve();
+      },
+      error: (err) => {
+        // Solo cerramos sesión si el token es inválido; un fallo de red no
+        // debe expulsar al usuario.
+        if (err?.status === 401 || err?.status === 403) {
           this.logout();
         }
-      });
-    }
+        this.readyResolve();
+      }
+    });
   }
 
   getToken(): string | null {

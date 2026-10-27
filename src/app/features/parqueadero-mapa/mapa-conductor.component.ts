@@ -18,510 +18,478 @@ import { Casilla, Organizacion, Reserva } from '../../core/models';
   template: `
     <app-navbar></app-navbar>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <!-- Top Breadcrumb & Switcher -->
-      <div class="flex items-center justify-between mb-4 text-xs text-slate-400">
-        <a routerLink="/organizaciones" class="hover:text-white flex items-center gap-1.5 transition-colors">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+    <main class="mx-auto max-w-[92rem] px-4 py-6 sm:px-6 lg:px-8">
+      <!-- Migas -->
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-edge pb-3">
+        <a routerLink="/organizaciones" class="group inline-flex items-center gap-1.5 text-[0.62rem] font-medium text-mist transition-colors hover:text-chalk">
+          <svg class="h-3 w-3 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m5 5-5-5 5-5"></path>
           </svg>
-          Ver todas tus sedes
+          Todas mis sedes
         </a>
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span class="text-slate-300 font-medium">Sincronización en Vivo (WebSockets)</span>
-        </div>
+        <span class="mono flex items-center gap-1.5 text-[0.52rem] uppercase tracking-[0.14em] text-mist">
+          <span class="live-dot scale-75"></span>
+          WebSocket · sincronización en vivo
+        </span>
       </div>
 
-      <!-- Header: Org Info (Slide 7) -->
-      @if (organizacion()) {
-        <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div class="flex items-center gap-3">
-              <h1 class="text-3xl font-extrabold text-white tracking-tight">{{ organizacion()?.nombre }}</h1>
-              <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                {{ organizacion()?.tipoEntidad }}
-              </span>
-            </div>
-            <p class="text-xs sm:text-sm text-slate-400 mt-1">
-              Visualización en tiempo real de la disponibilidad a través de un mapa interactivo.
-            </p>
+      <!-- Encabezado -->
+      <div class="mt-6 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+        <div class="min-w-0 rise">
+          <span class="kicker">Sede / Vista del conductor</span>
+          <div class="mt-3 flex flex-wrap items-center gap-2.5">
+            <h1 class="truncate text-3xl font-semibold tracking-[-0.04em] text-chalk sm:text-4xl">{{ organizacion()?.nombre || 'Cargando sede…' }}</h1>
+            @if (organizacion()?.tipoEntidad) {
+              <span class="tag tag-flow">{{ organizacion()?.tipoEntidad }}</span>
+            }
           </div>
-
-          <!-- Quick Badges -->
-          <div class="flex items-center gap-2.5">
-            <div class="px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-              {{ libresCount() }} Libres
-            </div>
-            <div class="px-3.5 py-1.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-red-400"></span>
-              {{ ocupadasCount() }} Ocupadas
-            </div>
-          </div>
-        </div>
-      }
-
-      <!-- Search & Filters Toolbar (Slide 7) -->
-      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-3 flex-1 min-w-[240px]">
-          <div class="relative w-full max-w-xs">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-500">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="8"></circle>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.3-4.3"></path>
-              </svg>
-            </span>
-            <input
-              type="text"
-              [(ngModel)]="busqueda"
-              placeholder="Buscar espacio (ej. A1, B3)..."
-              class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <!-- Filter buttons -->
-          <div class="flex items-center gap-1.5 text-xs">
-            <button
-              (click)="filtroTipo.set('todos')"
-              [class.bg-blue-600]="filtroTipo() === 'todos'"
-              [class.text-white]="filtroTipo() === 'todos'"
-              [class.text-slate-400]="filtroTipo() !== 'todos'"
-              class="px-2.5 py-1.5 rounded-lg font-medium hover:bg-slate-800 transition-colors"
-            >
-              Todos
-            </button>
-            <button
-              (click)="filtroTipo.set('libre')"
-              [class.bg-emerald-600]="filtroTipo() === 'libre'"
-              [class.text-white]="filtroTipo() === 'libre'"
-              [class.text-slate-400]="filtroTipo() !== 'libre'"
-              class="px-2.5 py-1.5 rounded-lg font-medium hover:bg-slate-800 transition-colors flex items-center gap-1"
-            >
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-              Libres
-            </button>
-            <button
-              (click)="filtroTipo.set('discapacitados')"
-              [class.bg-blue-600]="filtroTipo() === 'discapacitados'"
-              [class.text-white]="filtroTipo() === 'discapacitados'"
-              [class.text-slate-400]="filtroTipo() !== 'discapacitados'"
-              class="px-2.5 py-1.5 rounded-lg font-medium hover:bg-slate-800 transition-colors flex items-center gap-1"
-            >
-              ♿ Discapacitados
-            </button>
-            <button
-              (click)="filtroTipo.set('electrico')"
-              [class.bg-blue-600]="filtroTipo() === 'electrico'"
-              [class.text-white]="filtroTipo() === 'electrico'"
-              [class.text-slate-400]="filtroTipo() !== 'electrico'"
-              class="px-2.5 py-1.5 rounded-lg font-medium hover:bg-slate-800 transition-colors flex items-center gap-1"
-            >
-              ⚡ Eléctrico
-            </button>
-          </div>
+          <p class="mt-2 max-w-xl text-[0.72rem] leading-relaxed text-mist">
+            {{ organizacion()?.direccion || 'Consulta la disponibilidad y reserva tu puesto en tiempo real.' }}
+          </p>
         </div>
 
-        <div class="flex items-center gap-2">
-          <!-- Switcher entre vista Plano y vista Cuadrícula -->
-          <div class="flex p-0.5 bg-slate-950 border border-slate-800 rounded-xl text-xs">
-            <button
-              (click)="vistaModo.set('plano')"
-              [class.bg-blue-600]="vistaModo() === 'plano'"
-              [class.text-white]="vistaModo() === 'plano'"
-              [class.text-slate-400]="vistaModo() !== 'plano'"
-              class="px-2.5 py-1 rounded-lg font-semibold transition-all"
+        <div class="flex flex-wrap items-center gap-2.5 rise-2">
+          <!-- Ocupación -->
+          <div class="panel-flat flex items-center gap-3.5 px-4 py-3">
+            <div
+              class="relative grid h-14 w-14 place-items-center rounded-full"
+              [style.background]="'conic-gradient(#d8ff3e 0 ' + porcentajeOcupacion() + '%, #1b2230 ' + porcentajeOcupacion() + '% 100%)'"
             >
-              Plano Espacial
-            </button>
-            <button
-              (click)="vistaModo.set('secciones')"
-              [class.bg-blue-600]="vistaModo() === 'secciones'"
-              [class.text-white]="vistaModo() === 'secciones'"
-              [class.text-slate-400]="vistaModo() !== 'secciones'"
-              class="px-2.5 py-1 rounded-lg font-semibold transition-all"
-            >
-              Por Secciones
-            </button>
+              <div class="grid h-[2.6rem] w-[2.6rem] place-items-center rounded-full bg-panel">
+                <span class="mono text-[0.7rem] font-semibold text-chalk">{{ porcentajeOcupacion() }}%</span>
+              </div>
+            </div>
+            <div>
+              <div class="mono text-[0.5rem] uppercase tracking-[0.16em] text-mist">Ocupación total</div>
+              <div class="text-base font-semibold leading-tight text-chalk">{{ ocupadasCount() }} <span class="text-[0.6rem] font-normal text-mist">de {{ totalPuestos() }}</span></div>
+              <div class="mono mt-0.5 text-[0.5rem] text-ok">{{ libresCount() }} disponibles</div>
+            </div>
           </div>
 
           @if (authService.userRole() === 'administrador') {
             <a
               [routerLink]="['/organizaciones', organizacionId(), 'disenador']"
-              class="p-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 hover:text-white rounded-xl border border-blue-500/30 text-xs flex items-center gap-1.5 transition-colors"
+              class="btn btn-ghost h-[4.35rem] flex-col gap-1 px-4"
             >
-              <span>🎨 Diseñar Plano</span>
+              <svg class="h-4 w-4 text-signal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+              </svg>
+              <span class="mono text-[0.5rem] uppercase tracking-[0.1em]">Editar plano</span>
             </a>
           }
-
-          <button
-            (click)="cargarCasillas()"
-            title="Recargar estado manual"
-            class="p-2 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-800 text-xs flex items-center gap-1.5 transition-colors"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-            </svg>
-            <span>Sincronizar</span>
-          </button>
         </div>
       </div>
 
-      <!-- Main Layout: Parking Map Grid (Left) + Detail & Reserve Drawer (Right) -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <!-- Interactive Parking Lot Map (Slide 7) -->
-        <div class="lg:col-span-8 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative">
-          @if (vistaModo() === 'plano') {
-            <!-- Vista Plano Diseñado (Espacial) -->
-            <div class="w-full h-[560px] bg-slate-950/90 rounded-2xl border border-dashed border-slate-800 relative overflow-auto select-none bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:24px_24px] p-4">
-              @if (casillasFiltradas().length === 0) {
-                <div class="h-full flex flex-col items-center justify-center text-slate-500 text-xs">
-                  <p>No hay elementos para mostrar.</p>
-                </div>
-              }
-              @for (c of casillasFiltradas(); track c._id) {
-                <button
-                  type="button"
-                  (click)="seleccionarCasilla(c)"
-                  [style.left.px]="c.posX || 20"
-                  [style.top.px]="c.posY || 20"
-                  [style.transform]="'rotate(' + (c.rotacion || 0) + 'deg)'"
-                  [class.ring-2]="casillaSeleccionada()?._id === c._id"
-                  [class.ring-blue-400]="casillaSeleccionada()?._id === c._id"
-                  [class.bg-emerald-950_80]="c.estado === 'libre' && c.tipo !== 'carril' && c.tipo !== 'entrada' && c.tipo !== 'salida'"
-                  [class.border-emerald-500_60]="c.estado === 'libre' && c.tipo !== 'carril' && c.tipo !== 'entrada' && c.tipo !== 'salida'"
-                  [class.text-emerald-300]="c.estado === 'libre' && c.tipo !== 'carril'"
-                  [class.bg-red-950_80]="c.estado === 'ocupado' && c.tipo !== 'carril' && c.tipo !== 'entrada' && c.tipo !== 'salida'"
-                  [class.border-red-500_60]="c.estado === 'ocupado' && c.tipo !== 'carril' && c.tipo !== 'entrada' && c.tipo !== 'salida'"
-                  [class.text-red-400]="c.estado === 'ocupado'"
-                  [class.bg-emerald-900_90]="c.tipo === 'entrada'"
-                  [class.border-emerald-400]="c.tipo === 'entrada'"
-                  [class.text-emerald-100]="c.tipo === 'entrada'"
-                  [class.bg-rose-900_90]="c.tipo === 'salida'"
-                  [class.border-rose-400]="c.tipo === 'salida'"
-                  [class.text-rose-100]="c.tipo === 'salida'"
-                  [class.bg-slate-800]="c.tipo === 'carril'"
-                  [class.border-slate-600]="c.tipo === 'carril'"
-                  [class.text-slate-300]="c.tipo === 'carril'"
-                  class="absolute rounded-xl border flex flex-col items-center justify-center p-1.5 shadow-lg transition-transform hover:scale-105"
-                  [style.width.px]="c.tipo === 'carril' ? 180 : 80"
-                  [style.height.px]="c.tipo === 'carril' ? 50 : 70"
-                >
-                  @if (c.tipo === 'entrada') {
-                    <span class="text-xs">🚗 ⬇</span>
-                    <span class="text-[9px] font-bold uppercase tracking-wider">{{ c.codigo }}</span>
-                  } @else if (c.tipo === 'salida') {
-                    <span class="text-xs">🚪 ⬆</span>
-                    <span class="text-[9px] font-bold uppercase tracking-wider">{{ c.codigo }}</span>
-                  } @else if (c.tipo === 'carril') {
-                    <span class="text-[10px] font-mono tracking-widest uppercase">═ VÍA CIRCULACIÓN ═</span>
-                  } @else {
-                    <div class="flex items-center gap-1">
-                      @if (c.tipo === 'discapacitados') { <span>♿</span> }
-                      @if (c.tipo === 'electrico') { <span>⚡</span> }
-                      <span class="text-xs font-black">{{ c.codigo }}</span>
-                    </div>
-                    <span class="text-[8px] uppercase font-bold tracking-wider mt-0.5">
-                      {{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }}
-                    </span>
-                  }
-                </button>
-              }
+      <!-- Barra de filtros -->
+      <section class="panel mt-5 p-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-1 flex-wrap items-center gap-2">
+            <div class="relative min-w-[13rem] flex-1 sm:max-w-xs">
+              <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-mist/60">
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="7" stroke-width="1.8"></circle>
+                  <path stroke-linecap="round" stroke-width="1.8" d="m20 20-3.4-3.4"></path>
+                </svg>
+              </span>
+              <input
+                type="text"
+                [ngModel]="busqueda()"
+                (ngModelChange)="busqueda.set($event)"
+                placeholder="Buscar puesto (A1, B3…)"
+                class="field h-9 pl-8 text-[0.7rem]"
+              />
             </div>
-          } @else {
-            <!-- Parking lanes and spots grouped by sections -->
-            <div class="space-y-8">
-              <!-- Upper Level: Sección A & Sección B -->
-              <div>
-                <div class="flex items-center justify-between text-xs text-slate-400 font-bold uppercase tracking-wider mb-3 px-1">
-                  <span class="flex items-center gap-2 text-slate-300">
-                    <span class="w-2 h-2 rounded-full bg-blue-500"></span> Sección A (Norte)
-                  </span>
-                  <span class="text-[11px] text-slate-500">Acceso Elevador / Peatonal</span>
-                  <span class="flex items-center gap-2 text-slate-300">
-                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Sección B (Norte)
-                  </span>
-                </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                  <!-- Grid Sección A -->
-                  <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 p-3 bg-slate-950/70 border border-slate-800/80 rounded-2xl">
-                    @for (c of casillasPorSeccion('Sección A'); track c._id) {
-                      <button
-                        type="button"
-                        (click)="seleccionarCasilla(c)"
-                        [class.ring-2]="casillaSeleccionada()?._id === c._id"
-                        [class.ring-blue-400]="casillaSeleccionada()?._id === c._id"
-                        [class.bg-emerald-950_50]="c.estado === 'libre'"
-                        [class.border-emerald-600_60]="c.estado === 'libre'"
-                        [class.text-emerald-300]="c.estado === 'libre'"
-                        [class.bg-red-950_40]="c.estado === 'ocupado'"
-                        [class.border-red-600_60]="c.estado === 'ocupado'"
-                        [class.text-red-400]="c.estado === 'ocupado'"
-                        class="h-14 rounded-xl border flex flex-col items-center justify-center p-1 transition-all hover:scale-105 active:scale-95 relative"
-                      >
-                        <span class="text-xs font-black">{{ c.codigo }}</span>
-                        <span class="text-[9px] uppercase font-semibold">
-                          @if (c.tipo === 'discapacitados') { ♿ }
-                          @else if (c.tipo === 'electrico') { ⚡ }
-                          @else { {{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }} }
-                        </span>
-                      </button>
-                    }
-                  </div>
-
-                  <!-- Grid Sección B -->
-                  <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 p-3 bg-slate-950/70 border border-slate-800/80 rounded-2xl">
-                    @for (c of casillasPorSeccion('Sección B'); track c._id) {
-                      <button
-                        type="button"
-                        (click)="seleccionarCasilla(c)"
-                        [class.ring-2]="casillaSeleccionada()?._id === c._id"
-                        [class.ring-blue-400]="casillaSeleccionada()?._id === c._id"
-                        [class.bg-emerald-950_50]="c.estado === 'libre'"
-                        [class.border-emerald-600_60]="c.estado === 'libre'"
-                        [class.text-emerald-300]="c.estado === 'libre'"
-                        [class.bg-red-950_40]="c.estado === 'ocupado'"
-                        [class.border-red-600_60]="c.estado === 'ocupado'"
-                        [class.text-red-400]="c.estado === 'ocupado'"
-                        class="h-14 rounded-xl border flex flex-col items-center justify-center p-1 transition-all hover:scale-105 active:scale-95 relative"
-                      >
-                        <span class="text-xs font-black">{{ c.codigo }}</span>
-                        <span class="text-[9px] uppercase font-semibold">
-                          @if (c.tipo === 'discapacitados') { ♿ }
-                          @else if (c.tipo === 'electrico') { ⚡ }
-                          @else { {{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }} }
-                        </span>
-                      </button>
-                    }
-                  </div>
-                </div>
-              </div>
-
-              <!-- Central Roadway / Circulation (Slide 7 wireframe: "CIRCULACIÓN PRINCIPAL") -->
-              <div class="py-3 px-6 bg-slate-950 border-y border-dashed border-slate-800 rounded-xl flex items-center justify-between text-slate-500 font-mono text-[11px] tracking-widest uppercase">
-                <span class="flex items-center gap-2">← ENTRADA VEHICULAR</span>
-                <span class="font-bold text-slate-400 tracking-wider">═ CIRCULACIÓN PRINCIPAL ═</span>
-                <span class="flex items-center gap-2">SALIDA →</span>
-              </div>
-
-              <!-- Lower Level: Sección C & Sección D -->
-              <div>
-                <div class="flex items-center justify-between text-xs text-slate-400 font-bold uppercase tracking-wider mb-3 px-1">
-                  <span class="flex items-center gap-2 text-slate-300">
-                    <span class="w-2 h-2 rounded-full bg-amber-500"></span> Sección C (Sur)
-                  </span>
-                  <span class="text-[11px] text-slate-500">Zona Residencial</span>
-                  <span class="flex items-center gap-2 text-slate-300">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Sección D (Sur)
-                  </span>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                  <!-- Grid Sección C -->
-                  <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 p-3 bg-slate-950/70 border border-slate-800/80 rounded-2xl">
-                    @for (c of casillasPorSeccion('Sección C'); track c._id) {
-                      <button
-                        type="button"
-                        (click)="seleccionarCasilla(c)"
-                        [class.ring-2]="casillaSeleccionada()?._id === c._id"
-                        [class.ring-blue-400]="casillaSeleccionada()?._id === c._id"
-                        [class.bg-emerald-950_50]="c.estado === 'libre'"
-                        [class.border-emerald-600_60]="c.estado === 'libre'"
-                        [class.text-emerald-300]="c.estado === 'libre'"
-                        [class.bg-red-950_40]="c.estado === 'ocupado'"
-                        [class.border-red-600_60]="c.estado === 'ocupado'"
-                        [class.text-red-400]="c.estado === 'ocupado'"
-                        class="h-14 rounded-xl border flex flex-col items-center justify-center p-1 transition-all hover:scale-105 active:scale-95 relative"
-                      >
-                        <span class="text-xs font-black">{{ c.codigo }}</span>
-                        <span class="text-[9px] uppercase font-semibold">
-                          @if (c.tipo === 'discapacitados') { ♿ }
-                          @else if (c.tipo === 'electrico') { ⚡ }
-                          @else { {{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }} }
-                        </span>
-                      </button>
-                    }
-                  </div>
-
-                  <!-- Grid Sección D -->
-                  <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 p-3 bg-slate-950/70 border border-slate-800/80 rounded-2xl">
-                    @for (c of casillasPorSeccion('Sección D'); track c._id) {
-                      <button
-                        type="button"
-                        (click)="seleccionarCasilla(c)"
-                        [class.ring-2]="casillaSeleccionada()?._id === c._id"
-                        [class.ring-blue-400]="casillaSeleccionada()?._id === c._id"
-                        [class.bg-emerald-950_50]="c.estado === 'libre'"
-                        [class.border-emerald-600_60]="c.estado === 'libre'"
-                        [class.text-emerald-300]="c.estado === 'libre'"
-                        [class.bg-red-950_40]="c.estado === 'ocupado'"
-                        [class.border-red-600_60]="c.estado === 'ocupado'"
-                        [class.text-red-400]="c.estado === 'ocupado'"
-                        class="h-14 rounded-xl border flex flex-col items-center justify-center p-1 transition-all hover:scale-105 active:scale-95 relative"
-                      >
-                        <span class="text-xs font-black">{{ c.codigo }}</span>
-                        <span class="text-[9px] uppercase font-semibold">
-                          @if (c.tipo === 'discapacitados') { ♿ }
-                          @else if (c.tipo === 'electrico') { ⚡ }
-                          @else { {{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }} }
-                        </span>
-                      </button>
-                    }
-                  </div>
-                </div>
-              </div>
+            <div class="flex items-center gap-1 rounded-md border border-edge p-0.5">
+              <button
+                type="button"
+                (click)="filtroTipo.set('todos')"
+                class="rounded px-2.5 py-1.5 text-[0.6rem] font-medium transition-colors"
+                [ngClass]="filtroTipo() === 'todos' ? 'bg-white/[0.07] text-chalk' : 'text-mist hover:text-chalk'"
+              >
+                Todos
+              </button>
+              <button
+                type="button"
+                (click)="filtroTipo.set('libre')"
+                class="flex items-center gap-1.5 rounded px-2.5 py-1.5 text-[0.6rem] font-medium transition-colors"
+                [ngClass]="filtroTipo() === 'libre' ? 'bg-ok/[0.12] text-ok' : 'text-mist hover:text-chalk'"
+              >
+                <span class="h-1.5 w-1.5 rounded-full bg-ok"></span> Libres
+              </button>
+              <button
+                type="button"
+                (click)="filtroTipo.set('discapacitados')"
+                class="rounded px-2.5 py-1.5 text-[0.6rem] font-medium transition-colors"
+                [ngClass]="filtroTipo() === 'discapacitados' ? 'bg-flow/[0.12] text-flow' : 'text-mist hover:text-chalk'"
+              >
+                Movilidad
+              </button>
+              <button
+                type="button"
+                (click)="filtroTipo.set('electrico')"
+                class="rounded px-2.5 py-1.5 text-[0.6rem] font-medium transition-colors"
+                [ngClass]="filtroTipo() === 'electrico' ? 'bg-warn/[0.12] text-warn' : 'text-mist hover:text-chalk'"
+              >
+                Eléctrico
+              </button>
             </div>
-          }
+          </div>
 
-          <!-- Bottom Sensor Status Footer (Slide 7 wireframe) -->
-          <div class="mt-8 pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
-            <div class="flex items-center gap-2.5">
-              <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-              <span><strong>Estado del Sistema:</strong> Sensores y Socket.io operando normalmente. Sincronización continua de casillas.</span>
+          <div class="flex items-center gap-1.5">
+            <div class="flex items-center overflow-hidden rounded-md border border-edge">
+              <button
+                type="button"
+                (click)="vistaModo.set('plano')"
+                class="px-2.5 py-1.5 text-[0.6rem] font-semibold transition-colors"
+                [ngClass]="vistaModo() === 'plano' ? 'bg-signal text-void' : 'text-mist hover:text-chalk'"
+              >
+                Plano
+              </button>
+              <button
+                type="button"
+                (click)="vistaModo.set('secciones')"
+                class="px-2.5 py-1.5 text-[0.6rem] font-semibold transition-colors"
+                [ngClass]="vistaModo() === 'secciones' ? 'bg-signal text-void' : 'text-mist hover:text-chalk'"
+              >
+                Secciones
+              </button>
             </div>
-            <span class="text-[11px] font-mono text-slate-500">Latencia: &lt; 50ms</span>
+
+            <button
+              type="button"
+              (click)="cargarCasillas()"
+              class="btn btn-ghost h-9 px-2.5"
+              title="Sincronizar manualmente"
+            >
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"></path>
+              </svg>
+              <span class="hidden sm:inline">Sincronizar</span>
+            </button>
           </div>
         </div>
+      </section>
 
-        <!-- Spot Detail & Reservation Side Drawer (Slide 7 wireframe) -->
-        <div class="lg:col-span-4 space-y-6">
-          @if (casillaSeleccionada(); as sel) {
-            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
-              <div class="flex items-center justify-between mb-4">
-                <span class="text-xs uppercase font-bold tracking-wider text-slate-400">Puesto Seleccionado</span>
-                <span
-                  [class.bg-emerald-500_10]="sel.estado === 'libre'"
-                  [class.text-emerald-400]="sel.estado === 'libre'"
-                  [class.border-emerald-500_30]="sel.estado === 'libre'"
-                  [class.bg-red-500_10]="sel.estado === 'ocupado'"
-                  [class.text-red-400]="sel.estado === 'ocupado'"
-                  [class.border-red-500_30]="sel.estado === 'ocupado'"
-                  class="px-2.5 py-1 rounded-lg text-xs font-bold border"
-                >
-                  {{ sel.estado === 'libre' ? 'Espacio Libre' : 'Ocupado' }}
-                </span>
-              </div>
-
-              <!-- Giant Code Box (Slide 7 wireframe) -->
-              <div class="p-6 bg-slate-950 border border-slate-800 rounded-2xl text-center my-4">
-                <div class="text-5xl font-black text-white tracking-tight">{{ sel.codigo }}</div>
-                <div class="text-xs text-slate-400 mt-1 font-mono uppercase">{{ sel.seccion }} • Tipo: {{ sel.tipo }}</div>
-              </div>
-
-              <div class="space-y-3 text-xs mb-6">
-                <div class="flex items-center justify-between py-2 border-b border-slate-800 text-slate-400">
-                  <span>Tipo de espacio</span>
-                  <span class="text-slate-200 font-semibold capitalize">{{ sel.tipo }}</span>
-                </div>
-                <div class="flex items-center justify-between py-2 border-b border-slate-800 text-slate-400">
-                  <span>Disponibilidad</span>
-                  <span class="text-slate-200 font-semibold">{{ sel.estado === 'libre' ? 'Inmediata' : 'En uso' }}</span>
-                </div>
-              </div>
-
-              @if (mensajeAccion()) {
-                <div class="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-blue-300 text-xs">
-                  {{ mensajeAccion() }}
-                </div>
-              }
-
-              <!-- Reservation Form (If libre) -->
-              @if (sel.estado === 'libre') {
-                <div class="space-y-3.5 pt-2">
-                  <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wider">Reservar este puesto:</h4>
-                  <div>
-                    <label class="block text-[11px] font-semibold text-slate-400 mb-1">Placa del Vehículo</label>
-                    <input
-                      type="text"
-                      [(ngModel)]="placaReserva"
-                      placeholder="Ej. ABC-123"
-                      class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 uppercase font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label class="block text-[11px] font-semibold text-slate-400 mb-1">Duración de la reserva (Horas)</label>
-                    <select
-                      [(ngModel)]="duracionHoras"
-                      class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option [ngValue]="1">1 Hora</option>
-                      <option [ngValue]="2">2 Horas</option>
-                      <option [ngValue]="3">3 Horas</option>
-                      <option [ngValue]="4">4 Horas</option>
-                      <option [ngValue]="8">8 Horas (Jornada)</option>
-                    </select>
-                  </div>
-
-                  <button
-                    type="button"
-                    (click)="reservarCasilla(sel)"
-                    [disabled]="cargandoAccion() || !placaReserva.trim()"
-                    class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-emerald-600/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                  >
-                    @if (cargandoAccion()) {
-                      <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                      <span>Procesando reserva...</span>
-                    } @else {
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                      </svg>
-                      <span>Marcar como ocupado / Reservar</span>
-                    }
+      <div class="mt-4 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <!-- Mapa -->
+        <section class="panel overflow-hidden">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-edge px-4 py-2.5">
+            <div class="flex items-center gap-2">
+              <span class="mono text-[0.54rem] uppercase tracking-[0.16em] text-chalk">{{ vistaModo() === 'plano' ? 'Plano espacial' : 'Vista por secciones' }}</span>
+              <span class="tag tag-muted">{{ casillasFiltradas().length }} visibles</span>
+            </div>
+            @if (vistaModo() === 'plano') {
+              <div class="flex items-center gap-1.5">
+                <span class="mono text-[0.48rem] uppercase tracking-[0.12em] text-mist">Zoom</span>
+                <div class="flex items-center overflow-hidden rounded border border-edge">
+                  <button type="button" (click)="cambiarZoom(-0.1)" class="grid h-7 w-7 place-items-center text-mist transition-colors hover:bg-white/[0.04] hover:text-chalk">
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M5 12h14"></path></svg>
+                  </button>
+                  <span class="mono border-x border-edge px-2 text-[0.52rem] text-chalk">{{ zoomPorcentaje() }}%</span>
+                  <button type="button" (click)="cambiarZoom(0.1)" class="grid h-7 w-7 place-items-center text-mist transition-colors hover:bg-white/[0.04] hover:text-chalk">
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 5v14M5 12h14"></path></svg>
                   </button>
                 </div>
-              } @else {
-                <!-- State is ocupado -->
-                @if (miReservaEnCasilla(sel); as res) {
-                  <div class="pt-2">
-                    <p class="text-xs text-amber-400 mb-3 bg-amber-500/10 p-3 rounded-xl border border-amber-500/20">
-                      Tienes una reserva activa en este puesto (Placa: <strong>{{ res.placa }}</strong>).
-                    </p>
-                    <button
-                      type="button"
-                      (click)="finalizarMiReserva(res._id)"
-                      [disabled]="cargandoAccion()"
-                      class="w-full py-2.5 px-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-red-600/20 transition-all"
-                    >
-                      Finalizar mi Reserva (Liberar Puesto)
-                    </button>
+              </div>
+            } @else {
+              <span class="mono text-[0.5rem] uppercase tracking-[0.12em] text-mist">{{ secciones().length }} zonas</span>
+            }
+          </div>
+
+          @if (vistaModo() === 'plano') {
+            <div class="relative h-[30rem] overflow-auto bg-[#06090e] sm:h-[36rem] xl:h-[39rem]">
+              <div class="min-h-full min-w-full p-4">
+                <div class="relative shrink-0" [style.width.px]="ANCHO * zoom()" [style.height.px]="ALTO * zoom()">
+                  <div
+                    class="plan-surface absolute left-0 top-0 origin-top-left"
+                    [style.width.px]="ANCHO"
+                    [style.height.px]="ALTO"
+                    [style.transform]="'scale(' + zoom() + ')'"
+                  >
+                    <div class="pointer-events-none absolute inset-0 border border-edge-strong/40"></div>
+                    <span class="pointer-events-none absolute left-2 top-2 z-10 h-5 w-5 border-l border-t border-signal/35"></span>
+                    <span class="pointer-events-none absolute right-2 top-2 z-10 h-5 w-5 border-r border-t border-signal/35"></span>
+                    <span class="pointer-events-none absolute bottom-2 left-2 z-10 h-5 w-5 border-b border-l border-signal/35"></span>
+                    <span class="pointer-events-none absolute bottom-2 right-2 z-10 h-5 w-5 border-b border-r border-signal/35"></span>
+                    <span class="mono pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 text-[0.5rem] uppercase tracking-[0.24em] text-mist/30">{{ organizacion()?.nombre }}</span>
+                    <div class="pointer-events-none absolute bottom-4 right-4 z-10 flex flex-col items-center gap-1 text-mist/30">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 20V4m0 0-4 4m4-4 4 4"></path>
+                      </svg>
+                      <span class="mono text-[0.5rem]">N</span>
+                    </div>
+
+                    @for (c of casillasFiltradas(); track c._id) {
+                      <button
+                        type="button"
+                        class="bay"
+                        [attr.data-tipo]="c.tipo"
+                        [attr.data-estado]="esPuesto(c) ? c.estado : null"
+                        [class.is-selected]="casillaSeleccionada()?._id === c._id"
+                        [style.left.px]="c.posX || 0"
+                        [style.top.px]="c.posY || 0"
+                        [style.width.px]="anchoDe(c)"
+                        [style.height.px]="altoDe(c)"
+                        [style.transform]="'rotate(' + (c.rotacion || 0) + 'deg)'"
+                        (click)="seleccionarCasilla(c)"
+                        [title]="c.codigo + ' · ' + (esPuesto(c) ? c.estado : c.tipo)"
+                      >
+                        @switch (c.tipo) {
+                          @case ('standard') {
+                            <svg class="bay-glyph h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M5 16v-4.2L6.8 7h10.4L19 11.8V16M4 16h16v3H4zM7 16v2m10-2v2"></path>
+                              <path stroke-width="1.3" d="M7 11.5h10"></path>
+                            </svg>
+                            <span class="bay-code">{{ c.codigo }}</span>
+                            <span class="bay-meta">{{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }}</span>
+                          }
+                          @case ('discapacitados') {
+                            <svg class="bay-glyph h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <circle cx="11" cy="4.6" r="1.7" stroke-width="1.6"></circle>
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M11 8v5.5h5l2 5.5M8 10a4.6 4.6 0 1 0 5.4 7.4"></path>
+                            </svg>
+                            <span class="bay-code">{{ c.codigo }}</span>
+                            <span class="bay-meta">{{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }}</span>
+                          }
+                          @case ('electrico') {
+                            <svg class="bay-glyph h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="m13 3-8 11h6l-1 7 8-11h-6l1-7Z"></path>
+                            </svg>
+                            <span class="bay-code">{{ c.codigo }}</span>
+                            <span class="bay-meta">{{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }}</span>
+                          }
+                          @case ('entrada') {
+                            <svg class="bay-glyph h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"></path>
+                            </svg>
+                            <span class="bay-code">{{ c.codigo }}</span>
+                            <span class="bay-meta">{{ c.seccion }}</span>
+                          }
+                          @case ('salida') {
+                            <svg class="bay-glyph h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21V9m0 0 4 4M12 9l-4 4M5 3h14"></path>
+                            </svg>
+                            <span class="bay-code">{{ c.codigo }}</span>
+                            <span class="bay-meta">{{ c.seccion }}</span>
+                          }
+                          @case ('carril') {
+                            <span class="bay-lane-line"></span>
+                            <div class="relative z-[2] flex w-full items-center justify-between px-3">
+                              <span class="mono text-[0.5rem] uppercase tracking-[0.16em] text-mist/60">◀</span>
+                              <span class="mono text-[0.5rem] uppercase tracking-[0.2em] text-mist/80">Vía de circulación</span>
+                              <span class="mono text-[0.5rem] uppercase tracking-[0.16em] text-mist/60">▶</span>
+                            </div>
+                          }
+                        }
+                      </button>
+                    }
+
+                    @if (casillasFiltradas().length === 0) {
+                      <div class="absolute inset-0 flex flex-col items-center justify-center text-center text-mist">
+                        <p class="text-xs">No hay puestos que coincidan con el filtro.</p>
+                      </div>
+                    }
                   </div>
-                } @else {
-                  <div class="p-4 bg-slate-950/80 rounded-xl border border-slate-800 text-xs text-slate-400 text-center">
-                    Este puesto está ocupado actualmente por otro vehículo.
-                  </div>
-                }
-              }
+                </div>
+              </div>
             </div>
           } @else {
-            <div class="bg-slate-900/60 border border-slate-800 rounded-3xl p-8 text-center text-slate-400">
-              <div class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 mx-auto flex items-center justify-center mb-3">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path>
-                </svg>
-              </div>
-              <h4 class="text-sm font-bold text-white">Selecciona una casilla</h4>
-              <p class="text-xs text-slate-500 mt-1">Haz clic sobre cualquier puesto del mapa para ver detalles y reservarlo.</p>
+            <div class="max-h-[39rem] space-y-3 overflow-auto p-4">
+              @for (grupo of secciones(); track grupo.nombre) {
+                <div class="panel-flat overflow-hidden">
+                  <div class="flex items-center justify-between border-b border-edge px-4 py-2.5">
+                    <div class="flex items-center gap-2">
+                      <span class="h-1.5 w-1.5 rounded-full bg-flow"></span>
+                      <span class="text-[0.7rem] font-semibold text-chalk">{{ grupo.nombre }}</span>
+                    </div>
+                    <span class="mono text-[0.52rem] text-mist">{{ grupo.libres }}/{{ grupo.total }} libres</span>
+                  </div>
+                  <div class="grid grid-cols-4 gap-1.5 p-3 sm:grid-cols-6 md:grid-cols-8">
+                    @for (c of grupo.casillas; track c._id) {
+                      <button
+                        type="button"
+                        class="mini-bay"
+                        [attr.data-tipo]="c.tipo"
+                        [attr.data-estado]="esPuesto(c) ? c.estado : null"
+                        [class.mini-bay-selected]="casillaSeleccionada()?._id === c._id"
+                        (click)="seleccionarCasilla(c)"
+                      >
+                        <span class="text-[0.6rem] font-bold leading-none">{{ c.codigo }}</span>
+                        <span class="mono mt-0.5 text-[0.4rem] uppercase tracking-[0.08em] opacity-70">
+                          {{ esPuesto(c) ? (c.estado === 'libre' ? 'Libre' : 'Ocup.') : tipoCorto(c.tipo) }}
+                        </span>
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+              @if (secciones().length === 0) {
+                <div class="p-10 text-center text-xs text-mist">No hay puestos que coincidan con el filtro.</div>
+              }
             </div>
           }
 
-          <!-- Parking KPI Summary Card (Slide 7 wireframe) -->
-          <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl">
-            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Información del Estacionamiento</h4>
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-xs text-slate-300">Ocupación Total</span>
-              <span class="text-lg font-black text-white">{{ porcentajeOcupacion() }}%</span>
+          <div class="flex flex-wrap items-center justify-between gap-2 border-t border-edge px-4 py-2.5">
+            <div class="flex flex-wrap items-center gap-3 text-[0.55rem] text-mist">
+              <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-sm border border-ok/50 bg-ok/[0.14]"></span>Libre</span>
+              <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-sm border border-danger/50 bg-danger/[0.14]"></span>Ocupado</span>
+              <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-sm border border-flow/50 bg-flow/[0.14]"></span>Movilidad</span>
+              <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-sm border border-warn/50 bg-warn/[0.14]"></span>Eléctrico</span>
             </div>
-            <!-- Progress Bar -->
-            <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
-              <div
-                class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
-                [style.width.%]="porcentajeOcupacion()"
-              ></div>
+            <span class="mono flex items-center gap-1.5 text-[0.5rem] uppercase tracking-[0.1em] text-ok">
+              <span class="live-dot scale-75"></span> Sensores activos
+            </span>
+          </div>
+        </section>
+
+        <!-- Detalle -->
+        <aside class="space-y-4 lg:sticky lg:top-24">
+          @if (casillaSeleccionada(); as sel) {
+            <div class="panel overflow-hidden">
+              <div class="flex items-center justify-between border-b border-edge px-4 py-3">
+                <span class="mono text-[0.54rem] uppercase tracking-[0.16em] text-chalk">Puesto seleccionado</span>
+                @if (esPuesto(sel)) {
+                  <span class="tag" [ngClass]="sel.estado === 'libre' ? 'tag-ok' : 'tag-danger'">{{ sel.estado === 'libre' ? 'Disponible' : 'Ocupado' }}</span>
+                } @else {
+                  <span class="tag tag-muted">{{ tipoCorto(sel.tipo) }}</span>
+                }
+              </div>
+
+              <div class="p-4">
+                <div class="relative overflow-hidden rounded-lg border border-edge bg-[#070a10] p-5 text-center">
+                  <div class="absolute inset-0 dot-grid opacity-20"></div>
+                  <div class="relative">
+                    <div class="mono text-5xl font-semibold tracking-[-0.04em] text-chalk">{{ sel.codigo }}</div>
+                    <div class="mono mt-2 text-[0.52rem] uppercase tracking-[0.16em] text-mist">{{ sel.seccion }} · {{ tipoCorto(sel.tipo) }}</div>
+                  </div>
+                  <span class="absolute left-2 top-2 h-3 w-3 border-l border-t border-signal/35"></span>
+                  <span class="absolute bottom-2 right-2 h-3 w-3 border-b border-r border-signal/35"></span>
+                </div>
+
+                @if (esPuesto(sel)) {
+                  <div class="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-edge bg-edge">
+                    <div class="bg-[#0a0e15] px-3 py-2.5">
+                      <div class="mono text-[0.46rem] uppercase tracking-[0.14em] text-mist">Tipo</div>
+                      <div class="mt-0.5 text-[0.7rem] font-medium text-chalk">{{ tipoCorto(sel.tipo) }}</div>
+                    </div>
+                    <div class="bg-[#0a0e15] px-3 py-2.5">
+                      <div class="mono text-[0.46rem] uppercase tracking-[0.14em] text-mist">Estado</div>
+                      <div class="mt-0.5 text-[0.7rem] font-medium" [ngClass]="sel.estado === 'libre' ? 'text-ok' : 'text-danger'">{{ sel.estado === 'libre' ? 'Inmediata' : 'En uso' }}</div>
+                    </div>
+                  </div>
+                }
+
+                @if (mensajeAccion()) {
+                  <div class="mt-4 rounded-md border border-flow/30 bg-flow/[0.07] p-2.5 text-[0.65rem] leading-relaxed text-flow">
+                    {{ mensajeAccion() }}
+                  </div>
+                }
+
+                @if (esPuesto(sel) && sel.estado === 'libre') {
+                  <div class="mt-4 space-y-3 border-t border-edge pt-4">
+                    <h3 class="mono text-[0.52rem] uppercase tracking-[0.16em] text-mist">Reservar este puesto</h3>
+
+                    <div>
+                      <label class="label" for="placa">Placa del vehículo</label>
+                      <input
+                        id="placa"
+                        type="text"
+                        [(ngModel)]="placaReserva"
+                        placeholder="ABC-123"
+                        class="field field-mono uppercase tracking-[0.12em]"
+                      />
+                    </div>
+
+                    <div>
+                      <label class="label" for="duracion">Duración</label>
+                      <select id="duracion" [(ngModel)]="duracionHoras" class="field">
+                        <option [ngValue]="1">1 hora</option>
+                        <option [ngValue]="2">2 horas</option>
+                        <option [ngValue]="3">3 horas</option>
+                        <option [ngValue]="4">4 horas</option>
+                        <option [ngValue]="8">8 horas · jornada</option>
+                      </select>
+                    </div>
+
+                    <button
+                      type="button"
+                      (click)="reservarCasilla(sel)"
+                      [disabled]="cargandoAccion() || !placaReserva.trim()"
+                      class="btn btn-signal h-10 w-full"
+                    >
+                      @if (cargandoAccion()) {
+                        <span class="h-4 w-4 animate-spin rounded-full border-2 border-void/25 border-t-void"></span>
+                        <span>Procesando…</span>
+                      } @else {
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 13 4 4 10-10"></path>
+                        </svg>
+                        <span>Reservar puesto</span>
+                      }
+                    </button>
+                  </div>
+                } @else if (esPuesto(sel)) {
+                  <div class="mt-4 border-t border-edge pt-4">
+                    @if (miReservaEnCasilla(sel); as res) {
+                      <div class="rounded-md border border-warn/25 bg-warn/[0.06] p-3 text-[0.65rem] leading-relaxed text-warn">
+                        Tienes una reserva activa en este puesto con la placa <strong class="mono">{{ res.placa }}</strong>.
+                      </div>
+                      <button
+                        type="button"
+                        (click)="finalizarMiReserva(res._id)"
+                        [disabled]="cargandoAccion()"
+                        class="btn btn-danger mt-3 h-9 w-full"
+                      >
+                        Finalizar y liberar puesto
+                      </button>
+                    } @else {
+                      <div class="rounded-md border border-edge bg-white/[0.02] p-3 text-center text-[0.65rem] text-mist">
+                        Este puesto está ocupado por otro vehículo.
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <div class="mt-4 rounded-md border border-edge bg-white/[0.02] p-3 text-[0.65rem] leading-relaxed text-mist">
+                    Elemento de circulación: {{ sel.tipo === 'carril' ? 'vía interna del parqueadero' : 'acceso vehicular de la sede' }}.
+                  </div>
+                }
+              </div>
+            </div>
+          } @else {
+            <div class="panel p-6 text-center">
+              <div class="notch-sm mx-auto grid h-11 w-11 place-items-center border border-flow/25 bg-flow/[0.07] text-flow">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="m5 4 14 6-6 2-2 6-6-14Z"></path>
+                </svg>
+              </div>
+              <h2 class="mt-3 text-sm font-semibold text-chalk">Selecciona una casilla</h2>
+              <p class="mt-1 text-[0.65rem] leading-relaxed text-mist">Haz clic en cualquier puesto del plano para ver su estado y reservarlo.</p>
+            </div>
+          }
+
+          <div class="panel p-4">
+            <div class="mb-3 flex items-center justify-between">
+              <span class="mono text-[0.52rem] uppercase tracking-[0.16em] text-chalk">Resumen del parqueadero</span>
+              <span class="mono text-[0.5rem] text-mist">{{ totalPuestos() }} puestos</span>
+            </div>
+            <div class="mb-2 flex items-center justify-between text-[0.65rem]">
+              <span class="text-mist">Ocupación</span>
+              <span class="mono font-semibold text-chalk">{{ porcentajeOcupacion() }}%</span>
+            </div>
+            <div class="meter"><span [style.width.%]="porcentajeOcupacion()"></span></div>
+            <div class="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-edge bg-edge">
+              <div class="bg-[#0a0e15] px-3 py-2.5">
+                <div class="mono text-[0.46rem] uppercase tracking-[0.14em] text-mist">Libres</div>
+                <div class="text-lg font-semibold leading-tight text-ok">{{ libresCount() }}</div>
+              </div>
+              <div class="bg-[#0a0e15] px-3 py-2.5">
+                <div class="mono text-[0.46rem] uppercase tracking-[0.14em] text-mist">Ocupados</div>
+                <div class="text-lg font-semibold leading-tight text-danger">{{ ocupadasCount() }}</div>
+              </div>
             </div>
           </div>
-        </div>
+        </aside>
       </div>
     </main>
   `
@@ -534,30 +502,19 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
   private socketService = inject(SocketService);
   private authService = inject(AuthService);
 
+  readonly ANCHO = 1200;
+  readonly ALTO = 720;
+
   organizacionId = signal<string>('');
   organizacion = signal<Organizacion | null>(null);
   casillas = signal<Casilla[]>([]);
   misReservas = signal<Reserva[]>([]);
   casillaSeleccionada = signal<Casilla | null>(null);
 
-  busqueda = '';
+  busqueda = signal<string>('');
   filtroTipo = signal<'todos' | 'libre' | 'discapacitados' | 'electrico'>('todos');
   vistaModo = signal<'plano' | 'secciones'>('plano');
-
-  casillasFiltradas = computed(() => {
-    let lista = this.casillas();
-    if (this.busqueda.trim()) {
-      lista = lista.filter(c => c.codigo.toLowerCase().includes(this.busqueda.trim().toLowerCase()));
-    }
-    if (this.filtroTipo() === 'libre') {
-      lista = lista.filter(c => c.estado === 'libre');
-    } else if (this.filtroTipo() === 'discapacitados') {
-      lista = lista.filter(c => c.tipo === 'discapacitados');
-    } else if (this.filtroTipo() === 'electrico') {
-      lista = lista.filter(c => c.tipo === 'electrico');
-    }
-    return lista;
-  });
+  zoom = signal<number>(0.66);
 
   placaReserva = '';
   duracionHoras = 2;
@@ -566,12 +523,51 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
 
   private subs = new Subscription();
 
-  libresCount = computed(() => this.casillas().filter(c => c.estado === 'libre').length);
-  ocupadasCount = computed(() => this.casillas().filter(c => c.estado === 'ocupado').length);
+  esPuesto = (c: Casilla): boolean => c.tipo === 'standard' || c.tipo === 'discapacitados' || c.tipo === 'electrico';
+
+  puestos = computed(() => this.casillas().filter((c) => this.esPuesto(c)));
+  libresCount = computed(() => this.puestos().filter((c) => c.estado === 'libre').length);
+  ocupadasCount = computed(() => this.puestos().filter((c) => c.estado === 'ocupado').length);
+  totalPuestos = computed(() => this.puestos().length);
+  zoomPorcentaje = computed(() => Math.round(this.zoom() * 100));
   porcentajeOcupacion = computed(() => {
-    const total = this.casillas().length;
+    const total = this.totalPuestos();
     if (!total) return 0;
     return Math.round((this.ocupadasCount() / total) * 100);
+  });
+
+  casillasFiltradas = computed(() => {
+    let lista = this.casillas();
+    const termino = this.busqueda().trim().toLowerCase();
+    if (termino) {
+      return lista.filter((c) => c.codigo.toLowerCase().includes(termino));
+    }
+
+    const filtro = this.filtroTipo();
+    if (filtro === 'todos') return lista;
+
+    if (filtro === 'libre') {
+      return lista.filter((c) => !this.esPuesto(c) || c.estado === 'libre');
+    }
+    return lista.filter((c) => !this.esPuesto(c) || c.tipo === filtro);
+  });
+
+  secciones = computed(() => {
+    const mapa = new Map<string, Casilla[]>();
+    for (const c of this.casillasFiltradas()) {
+      const nombre = c.seccion || 'Sin sección';
+      if (!mapa.has(nombre)) mapa.set(nombre, []);
+      mapa.get(nombre)!.push(c);
+    }
+
+    return Array.from(mapa.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], 'es'))
+      .map(([nombre, lista]) => ({
+        nombre,
+        casillas: lista,
+        total: lista.filter((c) => this.esPuesto(c)).length,
+        libres: lista.filter((c) => this.esPuesto(c) && c.estado === 'libre').length
+      }));
   });
 
   ngOnInit(): void {
@@ -585,25 +581,18 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
       this.socketService.unirseOrganizacion(orgId);
 
       this.subs.add(
-        this.socketService.onCasillaActualizada().subscribe(casillaAct => {
-          this.casillas.update(lista =>
-            lista.map(c => (c._id === casillaAct._id ? { ...c, estado: casillaAct.estado } : c))
-          );
-          if (this.casillaSeleccionada()?._id === casillaAct._id) {
-            this.casillaSeleccionada.set(casillaAct);
-          }
+        this.socketService.onCasillaActualizada().subscribe((casillaAct) => {
+          this.casillas.update((lista) => lista.map((c) => (c._id === casillaAct._id ? { ...c, ...casillaAct } : c)));
+          this.casillaSeleccionada.update((actual) => (actual?._id === casillaAct._id ? { ...actual, ...casillaAct } : actual));
         })
       );
 
-      this.subs.add(
-        this.socketService.onReservaCreada().subscribe(() => {
-          this.cargarMisReservas();
-        })
-      );
+      this.subs.add(this.socketService.onReservaCreada().subscribe(() => this.cargarMisReservas()));
+      this.subs.add(this.socketService.onReservaFinalizada().subscribe(() => this.cargarMisReservas()));
 
       this.subs.add(
-        this.socketService.onReservaFinalizada().subscribe(() => {
-          this.cargarMisReservas();
+        this.route.queryParamMap.subscribe(() => {
+          if (this.casillas().length > 0) this.aplicarCasillaDesdeUrl();
         })
       );
     }
@@ -622,8 +611,8 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
   }
 
   cargarOrganizacion(id: string): void {
-    this.organizacionService.misOrganizaciones().subscribe(orgs => {
-      const match = orgs.find(o => o._id === id);
+    this.organizacionService.misOrganizaciones().subscribe((orgs) => {
+      const match = orgs.find((o) => o._id === id);
       if (match) this.organizacion.set(match);
     });
   }
@@ -631,37 +620,26 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
   cargarCasillas(): void {
     this.casillaService.listarPorOrganizacion(this.organizacionId()).subscribe({
       next: (data) => {
-        this.casillas.set(data);
+        this.casillas.set(this.normalizarPosiciones(data));
+        this.aplicarCasillaDesdeUrl();
       },
       error: (err) => console.error('Error al cargar casillas:', err)
     });
   }
 
-  cargarMisReservas(): void {
-    this.reservaService.misReservas().subscribe({
-      next: (data) => {
-        this.misReservas.set(data.filter(r => r.estado === 'activa'));
-      },
-      error: (err) => console.error('Error al cargar reservas:', err)
-    });
+  /** Preselecciona un puesto cuando se llega desde la búsqueda global (?casilla=A3). */
+  private aplicarCasillaDesdeUrl(): void {
+    const codigo = this.route.snapshot.queryParamMap.get('casilla');
+    if (!codigo) return;
+    const match = this.casillas().find((c) => c.codigo.toLowerCase() === codigo.toLowerCase());
+    if (match) this.seleccionarCasilla(match);
   }
 
-  casillasPorSeccion(seccionNombre: string): Casilla[] {
-    let lista = this.casillas().filter(c => c.seccion.toLowerCase() === seccionNombre.toLowerCase());
-
-    if (this.busqueda.trim()) {
-      lista = lista.filter(c => c.codigo.toLowerCase().includes(this.busqueda.trim().toLowerCase()));
-    }
-
-    if (this.filtroTipo() === 'libre') {
-      lista = lista.filter(c => c.estado === 'libre');
-    } else if (this.filtroTipo() === 'discapacitados') {
-      lista = lista.filter(c => c.tipo === 'discapacitados');
-    } else if (this.filtroTipo() === 'electrico') {
-      lista = lista.filter(c => c.tipo === 'electrico');
-    }
-
-    return lista;
+  cargarMisReservas(): void {
+    this.reservaService.misReservas().subscribe({
+      next: (data) => this.misReservas.set(data.filter((r) => r.estado === 'activa')),
+      error: (err) => console.error('Error al cargar reservas:', err)
+    });
   }
 
   seleccionarCasilla(c: Casilla): void {
@@ -670,7 +648,7 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
   }
 
   miReservaEnCasilla(c: Casilla): Reserva | undefined {
-    return this.misReservas().find(r => {
+    return this.misReservas().find((r) => {
       const cId = typeof r.casilla === 'object' ? r.casilla._id : r.casilla;
       return cId === c._id;
     });
@@ -682,22 +660,24 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
     this.cargandoAccion.set(true);
     this.mensajeAccion.set(null);
 
-    this.reservaService.crearReserva({
-      casilla: casilla._id,
-      placa: this.placaReserva.trim().toUpperCase(),
-      duracionHoras: Number(this.duracionHoras)
-    }).subscribe({
-      next: () => {
-        this.cargandoAccion.set(false);
-        this.mensajeAccion.set(`¡Casilla ${casilla.codigo} reservada con éxito!`);
-        this.cargarCasillas();
-        this.cargarMisReservas();
-      },
-      error: (err) => {
-        this.cargandoAccion.set(false);
-        this.mensajeAccion.set(err.error?.message || 'Error al reservar la casilla.');
-      }
-    });
+    this.reservaService
+      .crearReserva({
+        casilla: casilla._id,
+        placa: this.placaReserva.trim().toUpperCase(),
+        duracionHoras: Number(this.duracionHoras)
+      })
+      .subscribe({
+        next: () => {
+          this.cargandoAccion.set(false);
+          this.mensajeAccion.set(`¡Casilla ${casilla.codigo} reservada con éxito!`);
+          this.cargarCasillas();
+          this.cargarMisReservas();
+        },
+        error: (err) => {
+          this.cargandoAccion.set(false);
+          this.mensajeAccion.set(err.error?.message || 'Error al reservar la casilla.');
+        }
+      });
   }
 
   finalizarMiReserva(reservaId: string): void {
@@ -713,6 +693,66 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
         this.cargandoAccion.set(false);
         this.mensajeAccion.set(err.error?.message || 'Error al finalizar reserva.');
       }
+    });
+  }
+
+  cambiarZoom(delta: number): void {
+    this.zoom.set(Math.max(0.4, Math.min(1.4, Number((this.zoom() + delta).toFixed(2)))));
+  }
+
+  tipoCorto(tipo: Casilla['tipo']): string {
+    const etiquetas: Record<string, string> = {
+      standard: 'Estándar',
+      discapacitados: 'Movilidad',
+      electrico: 'Eléctrico',
+      entrada: 'Entrada',
+      salida: 'Salida',
+      carril: 'Carril'
+    };
+    return etiquetas[tipo] || 'Estándar';
+  }
+
+  anchoDe(c: Casilla): number {
+    if (c.tipo === 'carril') return 360;
+    if (c.tipo === 'entrada' || c.tipo === 'salida') return 132;
+    return 88;
+  }
+
+  altoDe(c: Casilla): number {
+    return c.tipo === 'carril' ? 84 : c.tipo === 'entrada' || c.tipo === 'salida' ? 84 : 120;
+  }
+
+  private normalizarPosiciones(data: Casilla[]): Casilla[] {
+    const ocupadas = new Set<string>();
+    let autoIndice = 0;
+
+    const siguienteAuto = (): { x: number; y: number } => {
+      for (let i = 0; i < 140; i++) {
+        const col = autoIndice % 10;
+        const fila = Math.floor(autoIndice / 10);
+        autoIndice++;
+        const x = 70 + col * 105;
+        const y = 70 + fila * 130;
+        if (!ocupadas.has(`${x},${y}`) && y < this.ALTO - 120) return { x, y };
+      }
+      return { x: 70, y: 70 };
+    };
+
+    return data.map((c) => {
+      let posX = typeof c.posX === 'number' ? c.posX : 0;
+      let posY = typeof c.posY === 'number' ? c.posY : 0;
+
+      if ((posX === 0 && posY === 0) || ocupadas.has(`${posX},${posY}`)) {
+        const pos = siguienteAuto();
+        posX = pos.x;
+        posY = pos.y;
+      }
+
+      posX = Math.max(0, Math.min(posX, this.ANCHO - this.anchoDe(c)));
+      posY = Math.max(0, Math.min(posY, this.ALTO - this.altoDe(c)));
+      ocupadas.add(`${posX},${posY}`);
+
+      return { ...c, posX, posY, rotacion: c.rotacion || 0 };
     });
   }
 }

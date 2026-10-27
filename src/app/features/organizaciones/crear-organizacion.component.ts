@@ -14,197 +14,281 @@ import { CasillaService } from '../../core/services/casilla.service';
   template: `
     <app-navbar></app-navbar>
 
-    <main class="max-w-5xl mx-auto px-4 py-8 sm:py-10">
-      <a routerLink="/organizaciones" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white mb-6 transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+    <main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+      <a routerLink="/organizaciones" class="group inline-flex items-center gap-2 text-[0.7rem] font-medium text-mist transition-colors hover:text-chalk">
+        <svg class="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m5 5-5-5 5-5"></path>
         </svg>
-        Volver a Mis Organizaciones
+        Volver a mis sedes
       </a>
 
-      <div class="mb-8">
-        <h1 class="text-3xl font-extrabold text-white tracking-tight">Crear Nueva Organización</h1>
-        <p class="text-xs sm:text-sm text-slate-400 mt-1.5 leading-relaxed">
-          Configura los detalles maestros de tu red de estacionamientos. Selecciona la ubicación en el mapa interactivo y define capacidades.
-        </p>
+      <!-- Encabezado -->
+      <div class="mt-7 flex flex-col gap-6 border-b border-edge pb-6 lg:flex-row lg:items-end lg:justify-between">
+        <div class="rise">
+          <span class="kicker">Nueva sede / Configuración</span>
+          <h1 class="mt-4 text-4xl font-semibold leading-[0.98] tracking-[-0.045em] text-chalk sm:text-5xl">
+            Diseña tu<br /><span class="text-outline">parqueadero.</span>
+          </h1>
+          <p class="mt-4 max-w-lg text-[0.8rem] leading-relaxed text-mist">
+            Define la identidad y ubicación de la sede. Al finalizar abrirás el editor visual para dibujar casillas, entradas y salidas.
+          </p>
+        </div>
+
+        <!-- Pasos -->
+        <div class="rise-2 flex items-center gap-1.5 text-[0.6rem]">
+          <span class="flex items-center gap-2 rounded-md border border-signal/25 bg-signal/[0.06] px-2.5 py-2 text-signal">
+            <span class="mono">01</span> Identidad
+          </span>
+          <span class="h-px w-4 bg-edge-strong"></span>
+          <span class="flex items-center gap-2 rounded-md border border-edge px-2.5 py-2 text-mist">
+            <span class="mono">02</span> Operación
+          </span>
+          <span class="h-px w-4 bg-edge-strong"></span>
+          <span class="flex items-center gap-2 rounded-md border border-edge px-2.5 py-2 text-mist/60">
+            <span class="mono">03</span> Plano
+          </span>
+        </div>
       </div>
 
       @if (errorMensaje()) {
-        <div class="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-400 text-xs flex items-center gap-2">
-          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        <div class="mt-5 flex items-start gap-2.5 rounded-md border border-danger/30 bg-danger/[0.07] p-3.5 text-[0.72rem] text-danger">
+          <svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" stroke-width="1.8"></circle>
+            <path stroke-linecap="round" stroke-width="1.8" d="M12 8v4m0 3.5v.01"></path>
           </svg>
           <span>{{ errorMensaje() }}</span>
         </div>
       }
 
-      <form [formGroup]="orgForm" (ngSubmit)="crear()" class="space-y-6">
-        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 sm:p-8 backdrop-blur shadow-xl">
-          <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-            1. Identidad y Ubicación (OpenStreetMap)
-          </h2>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="sm:col-span-2">
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Nombre de la Organización</label>
-              <input
-                type="text"
-                formControlName="nombre"
-                placeholder="Ej. Parqueadero MetroMall S.A."
-                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+      <form [formGroup]="orgForm" (ngSubmit)="crear()" class="mt-6 grid items-start gap-5 lg:grid-cols-12">
+        <!-- Columna principal -->
+        <div class="space-y-5 lg:col-span-8">
+          <!-- Identidad -->
+          <section class="panel rise-2">
+            <div class="flex items-center justify-between border-b border-edge px-6 py-4">
+              <div class="section-head mb-0">
+                <span class="section-num">01</span>
+                <span class="section-title">Identidad de la sede</span>
+              </div>
+              <span class="mono hidden text-[0.52rem] uppercase tracking-[0.16em] text-mist sm:inline">Datos maestros</span>
             </div>
 
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">NIT / Identificación Fiscal</label>
-              <input
-                type="text"
-                formControlName="nit"
-                placeholder="900123456-7"
-                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Tipo de Entidad</label>
-              <select
-                formControlName="tipoEntidad"
-                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="Residencial">Residencial</option>
-                <option value="Comercial">Comercial</option>
-                <option value="Mixto">Mixto</option>
-                <option value="Publico">Público</option>
-              </select>
-            </div>
-
-            <div class="sm:col-span-2">
-              <div class="flex items-center justify-between mb-1.5">
-                <label class="block text-xs font-semibold text-slate-300">
-                  Ubicación y Dirección (Selecciona en el mapa OpenStreetMap)
-                </label>
-                <button
-                  type="button"
-                  (click)="usarMiUbicacion()"
-                  class="text-[11px] text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium transition-colors"
-                >
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v3m0 14v3m10-10h-3M5 12H2"></path>
-                  </svg>
-                  Usar mi ubicación GPS
-                </button>
+            <div class="grid gap-4 p-6 sm:grid-cols-2">
+              <div class="sm:col-span-2">
+                <label class="label" for="nombre">Nombre de la organización</label>
+                <input id="nombre" type="text" formControlName="nombre" placeholder="Ej. Parqueadero MetroMall S.A." class="field" />
               </div>
 
-              <div class="relative rounded-2xl overflow-hidden border border-slate-800 mb-3 shadow-lg">
-                <div id="mapa-osm" class="w-full h-72 bg-slate-950 z-0"></div>
-                <div class="absolute top-3 left-3 z-[1000] bg-slate-900/90 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-700/60 text-[11px] text-slate-300 shadow flex items-center gap-2">
-                  <span>📍 Haz clic en el mapa para fijar el estacionamiento</span>
+              <div>
+                <label class="label" for="nit">NIT / Identificación fiscal</label>
+                <input id="nit" type="text" formControlName="nit" placeholder="900123456-7" class="field field-mono" />
+              </div>
+
+              <div>
+                <label class="label" for="tipoEntidad">Tipo de entidad</label>
+                <select id="tipoEntidad" formControlName="tipoEntidad" class="field">
+                  <option value="Residencial">Residencial</option>
+                  <option value="Comercial">Comercial</option>
+                  <option value="Mixto">Mixto</option>
+                  <option value="Publico">Público</option>
+                </select>
+              </div>
+
+              <div class="sm:col-span-2">
+                <div class="mb-1.5 flex items-end justify-between">
+                  <label class="label mb-0" for="direccion">Ubicación y dirección</label>
+                  <button
+                    type="button"
+                    (click)="usarMiUbicacion()"
+                    class="mono inline-flex items-center gap-1 text-[0.55rem] uppercase tracking-[0.12em] text-flow transition-colors hover:text-chalk"
+                  >
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="3" stroke-width="1.8"></circle>
+                      <path stroke-linecap="round" stroke-width="1.8" d="M12 2v3m0 14v3M2 12h3m14 0h3"></path>
+                    </svg>
+                    Usar mi ubicación
+                  </button>
+                </div>
+
+                <div class="relative overflow-hidden rounded-lg border border-edge bg-[#070a10]">
+                  <div id="mapa-osm" class="map-dark z-0 h-[19rem] w-full"></div>
+                  <div class="pointer-events-none absolute left-3 top-3 z-[500] flex items-center gap-2 rounded border border-edge/80 bg-void/85 px-2.5 py-1.5 text-[0.6rem] text-mist backdrop-blur">
+                    <span class="h-1.5 w-1.5 rounded-full bg-signal"></span>
+                    Haz clic en el mapa para fijar la sede
+                  </div>
+                  <div class="pointer-events-none absolute bottom-3 right-3 z-[500] rounded border border-edge/80 bg-void/85 px-2 py-1 backdrop-blur">
+                    <span class="mono text-[0.5rem] uppercase tracking-[0.14em] text-mist/70">OpenStreetMap</span>
+                  </div>
+                  <span class="pointer-events-none absolute left-2 top-2 z-[500] h-4 w-4 border-l border-t border-signal/60"></span>
+                  <span class="pointer-events-none absolute bottom-2 left-2 z-[500] h-4 w-4 border-b border-l border-signal/60"></span>
+                  <span class="pointer-events-none absolute bottom-2 right-2 z-[500] h-4 w-4 border-b border-r border-signal/60"></span>
+                </div>
+
+                <input
+                  id="direccion"
+                  type="text"
+                  formControlName="direccion"
+                  placeholder="Dirección detectada o manual (Ej. Calle 10 # 45-20, Itagüí)"
+                  class="field mt-3"
+                />
+              </div>
+
+              <div class="sm:col-span-2">
+                <label class="label" for="descripcion">Descripción corta</label>
+                <textarea
+                  id="descripcion"
+                  rows="2"
+                  formControlName="descripcion"
+                  placeholder="Breve descripción de la sede y accesos disponibles…"
+                  class="field"
+                ></textarea>
+              </div>
+            </div>
+          </section>
+
+          <!-- Operación -->
+          <section class="panel rise-3">
+            <div class="flex items-center justify-between border-b border-edge px-6 py-4">
+              <div class="section-head mb-0">
+                <span class="section-num">02</span>
+                <span class="section-title">Capacidad y operación</span>
+              </div>
+              <span class="mono hidden text-[0.52rem] uppercase tracking-[0.16em] text-mist sm:inline">Reglas del sitio</span>
+            </div>
+
+            <div class="p-6">
+              <div class="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <label class="label" for="totalPuestos">Puestos iniciales</label>
+                  <input id="totalPuestos" type="number" min="1" formControlName="totalPuestos" placeholder="24" class="field field-mono" />
+                </div>
+                <div>
+                  <label class="label" for="limiteMiembros">Límite de miembros</label>
+                  <input id="limiteMiembros" type="number" min="1" formControlName="limiteMiembros" placeholder="100" class="field field-mono" />
+                </div>
+                <div>
+                  <label class="label" for="zonaHoraria">Zona horaria</label>
+                  <input id="zonaHoraria" type="text" formControlName="zonaHoraria" class="field field-mono" />
                 </div>
               </div>
 
-              <input
-                type="text"
-                formControlName="direccion"
-                placeholder="Dirección detectada o manual (Ej. Calle 10 # 45-20, Itagüí)"
-                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+              <div class="mt-5 border-t border-edge pt-5">
+                <span class="label">Módulos habilitados</span>
+                <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <label class="checkbox-tile">
+                    <input type="checkbox" formControlName="reservasPublicas" />
+                    <span>
+                      <span class="block text-[0.7rem] font-medium text-chalk">Reservas públicas</span>
+                      <span class="block text-[0.58rem] text-mist">Cualquier miembro puede reservar</span>
+                    </span>
+                  </label>
 
-            <div class="sm:col-span-2">
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Descripción Corta</label>
-              <textarea
-                rows="2"
-                formControlName="descripcion"
-                placeholder="Breve descripción de la sede y accesos disponibles..."
-                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              ></textarea>
+                  <label class="checkbox-tile">
+                    <input type="checkbox" formControlName="cobroAutomatico" />
+                    <span>
+                      <span class="block text-[0.7rem] font-medium text-chalk">Cobro automático</span>
+                      <span class="block text-[0.58rem] text-mist">Liquidación al finalizar</span>
+                    </span>
+                  </label>
+
+                  <label class="checkbox-tile">
+                    <input type="checkbox" formControlName="cobroPorHora" />
+                    <span>
+                      <span class="block text-[0.7rem] font-medium text-chalk">Cobro por hora</span>
+                      <span class="block text-[0.58rem] text-mist">Tarifa variable por tiempo</span>
+                    </span>
+                  </label>
+
+                  <label class="checkbox-tile">
+                    <input type="checkbox" formControlName="acceso24_7" />
+                    <span>
+                      <span class="block text-[0.7rem] font-medium text-chalk">Acceso 24/7</span>
+                      <span class="block text-[0.58rem] text-mist">Sin restricción horaria</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
             </div>
-          </div>
+          </section>
         </div>
 
-        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 sm:p-8 backdrop-blur shadow-xl">
-          <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-            2. Capacidad y Operación
-          </h2>
-
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Total de Puestos Iniciales</label>
-              <input
-                type="number"
-                min="1"
-                formControlName="totalPuestos"
-                placeholder="24"
-                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+        <!-- Columna lateral -->
+        <aside class="space-y-4 lg:sticky lg:top-24 lg:col-span-4">
+          <div class="panel notch-tr rise-3 overflow-hidden">
+            <div class="relative h-28 overflow-hidden border-b border-edge bg-[#070a10]">
+              <div class="absolute inset-0 line-grid opacity-50"></div>
+              <div class="absolute inset-0 bg-gradient-to-br from-signal/[0.09] via-transparent to-flow/[0.1]"></div>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="mono text-[0.55rem] uppercase tracking-[0.24em] text-signal/80">SGP / Setup</div>
+              </div>
+              <div class="absolute bottom-3 left-4 right-4 flex items-end justify-between">
+                <div class="flex gap-1">
+                  @for (b of miniauras; track $index) {
+                    <span class="h-5 w-1 rounded-sm" [class]="b % 5 === 0 ? 'bg-danger/50' : 'bg-ok/40'"></span>
+                  }
+                </div>
+                <span class="mono text-[0.5rem] uppercase tracking-[0.16em] text-mist/60">Nivel 01</span>
+              </div>
             </div>
 
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Límite de Miembros</label>
-              <input
-                type="number"
-                min="1"
-                formControlName="limiteMiembros"
-                placeholder="100"
-                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            <div class="p-5">
+              <h2 class="text-sm font-semibold text-chalk">Resumen de creación</h2>
+              <p class="mt-1 text-[0.68rem] leading-relaxed text-mist">
+                La sede se crea vacía. A continuación dibujarás el plano con el editor interactivo.
+              </p>
 
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Zona Horaria</label>
-              <input
-                type="text"
-                formControlName="zonaHoraria"
-                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <dl class="mt-4 space-y-2.5 border-t border-edge pt-4 text-[0.68rem]">
+                <div class="flex items-center justify-between gap-2">
+                  <dt class="text-mist">Nombre</dt>
+                  <dd class="max-w-[10rem] truncate text-right font-medium text-chalk">{{ orgForm.value.nombre || 'Sin definir' }}</dd>
+                </div>
+                <div class="flex items-center justify-between">
+                  <dt class="text-mist">Entidad</dt>
+                  <dd class="font-medium text-chalk">{{ orgForm.value.tipoEntidad }}</dd>
+                </div>
+                <div class="flex items-center justify-between">
+                  <dt class="text-mist">Puestos</dt>
+                  <dd class="mono font-medium text-signal">{{ orgForm.value.totalPuestos }}</dd>
+                </div>
+                <div class="flex items-center justify-between">
+                  <dt class="text-mist">Zona horaria</dt>
+                  <dd class="mono font-medium text-chalk">{{ orgForm.value.zonaHoraria }}</dd>
+                </div>
+              </dl>
+
+              <button
+                type="submit"
+                [disabled]="cargando()"
+                class="btn btn-signal mt-5 h-11 w-full"
+              >
+                @if (cargando()) {
+                  <span class="h-4 w-4 animate-spin rounded-full border-2 border-void/25 border-t-void"></span>
+                  <span>Creando sede…</span>
+                } @else {
+                  <span>Crear y abrir editor</span>
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-5-5 5 5-5 5"></path>
+                  </svg>
+                }
+              </button>
+              <a routerLink="/organizaciones" class="mt-2 flex w-full items-center justify-center py-2 text-[0.65rem] font-medium text-mist transition-colors hover:text-chalk">
+                Cancelar
+              </a>
             </div>
           </div>
 
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-slate-800">
-            <label class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 cursor-pointer hover:border-slate-700">
-              <input type="checkbox" formControlName="reservasPublicas" class="rounded text-blue-600 focus:ring-blue-500 bg-slate-900 border-slate-700">
-              <span class="text-xs font-medium text-slate-300">Reservas Públicas</span>
-            </label>
-
-            <label class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 cursor-pointer hover:border-slate-700">
-              <input type="checkbox" formControlName="cobroAutomatico" class="rounded text-blue-600 focus:ring-blue-500 bg-slate-900 border-slate-700">
-              <span class="text-xs font-medium text-slate-300">Cobro Automático</span>
-            </label>
-
-            <label class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 cursor-pointer hover:border-slate-700">
-              <input type="checkbox" formControlName="cobroPorHora" class="rounded text-blue-600 focus:ring-blue-500 bg-slate-900 border-slate-700">
-              <span class="text-xs font-medium text-slate-300">Cobro por Hora</span>
-            </label>
-
-            <label class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 cursor-pointer hover:border-slate-700">
-              <input type="checkbox" formControlName="acceso24_7" class="rounded text-blue-600 focus:ring-blue-500 bg-slate-900 border-slate-700">
-              <span class="text-xs font-medium text-slate-300">Acceso 24/7</span>
-            </label>
+          <div class="panel-flat flex items-start gap-2.5 p-4">
+            <span class="mt-0.5 text-signal">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 3 5 6v5c0 4.4 2.9 8.3 7 9.5 4.1-1.2 7-5.1 7-9.5V6l-7-3Z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="m9 12 2 2 4-4"></path>
+              </svg>
+            </span>
+            <p class="text-[0.65rem] leading-relaxed text-mist">
+              Solo el creador de la organización podrá editar el plano y los puestos. Los miembros acceden al mapa en modo lectura con reservas.
+            </p>
           </div>
-        </div>
-
-        <div class="flex items-center justify-end gap-4">
-          <a routerLink="/organizaciones" class="px-5 py-2.5 rounded-xl text-slate-400 hover:text-white text-xs font-semibold">
-            Cancelar
-          </a>
-          <button
-            type="submit"
-            [disabled]="cargando()"
-            class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-sm shadow-lg shadow-blue-500/25 disabled:opacity-50 transition-all flex items-center gap-2"
-          >
-            @if (cargando()) {
-              <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              <span>Guardando...</span>
-            } @else {
-              <span>Crear y Abrir Diseñador de Parqueo →</span>
-            }
-          </button>
-        </div>
+        </aside>
       </form>
     </main>
   `
@@ -220,6 +304,7 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
 
   cargando = signal<boolean>(false);
   errorMensaje = signal<string | null>(null);
+  miniauras = Array.from({ length: 12 }, (_, i) => i);
 
   orgForm = this.fb.group({
     nombre: ['', [Validators.required]],
@@ -251,9 +336,11 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
     const lngDefault = -75.609;
 
     this.map = L.map('mapa-osm', {
-      zoomControl: true,
-      attributionControl: true
+      zoomControl: false,
+      attributionControl: false
     }).setView([latDefault, lngDefault], 14);
+
+    L.control.zoom({ position: 'bottomright' }).addTo(this.map);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
@@ -262,9 +349,11 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
 
     const pinIcon = L.divIcon({
       className: 'custom-pin',
-      html: `<div style="background-color: #2563eb; width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 16px;">📍</div>`,
-      iconSize: [32, 32],
-      iconAnchor: [16, 32]
+      html: `<div style="position:relative;width:34px;height:34px;display:grid;place-items:center;background:#d8ff3e;color:#080b0f;border-radius:8px 8px 8px 2px;box-shadow:0 0 0 4px rgba(216,255,62,.18),0 14px 24px -8px rgba(0,0,0,.9);transform:rotate(-45deg)">
+        <span style="transform:rotate(45deg);font:700 13px/1 'JetBrains Mono',monospace">P</span>
+      </div>`,
+      iconSize: [34, 34],
+      iconAnchor: [17, 32]
     });
 
     this.marker = L.marker([latDefault, lngDefault], { icon: pinIcon, draggable: true }).addTo(this.map);
@@ -330,7 +419,6 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
     this.organizacionService.crearOrganizacion(val).subscribe({
       next: (res) => {
         const orgId = res.organizacion._id;
-        // Redirigir directamente al Diseñador Interactivo de Mapa del Parqueadero
         this.cargando.set(false);
         this.router.navigate(['/organizaciones', orgId, 'disenador']);
       },

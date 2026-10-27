@@ -1,10 +1,9 @@
 import { HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { AuthService } from '../services/auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const authService = inject(AuthService);
-  const token = authService.getToken();
+  // Se lee directo de localStorage para evitar una dependencia circular:
+  // AuthService inyecta HttpClient y su constructor dispara la carga del perfil.
+  const token = localStorage.getItem('sgp_token');
 
   if (token) {
     const authReq = req.clone({

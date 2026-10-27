@@ -12,114 +12,174 @@ import { OrganizacionService } from '../../core/services/organizacion.service';
   template: `
     <app-navbar></app-navbar>
 
-    <div class="max-w-4xl mx-auto px-4 py-8 sm:py-12">
-      <!-- Back link -->
-      <a routerLink="/organizaciones" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white mb-6 transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+    <main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+      <a routerLink="/organizaciones" class="group inline-flex items-center gap-2 text-[0.7rem] font-medium text-mist transition-colors hover:text-chalk">
+        <svg class="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m5 5-5-5 5-5"></path>
         </svg>
-        Volver a Mis Sedes
+        Volver a mis sedes
       </a>
 
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <!-- Input section (Left) -->
-        <div class="lg:col-span-7 bg-slate-900/80 border border-slate-800 rounded-2xl p-6 sm:p-8 backdrop-blur shadow-xl">
-          <div class="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mb-5">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
-            </svg>
+      <div class="mt-7 grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+        <!-- Formulario -->
+        <section class="panel notch rise lg:col-span-7">
+          <div class="flex items-center justify-between border-b border-edge px-6 py-3.5 sm:px-8">
+            <span class="mono text-[0.58rem] uppercase tracking-[0.2em] text-mist">Invitación / Canje</span>
+            <span class="tag tag-signal"><span class="live-dot scale-75"></span> Validación en vivo</span>
           </div>
 
-          <h2 class="text-2xl font-bold text-white tracking-tight">Ingresar Código de Invitación</h2>
-          <p class="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed">
-            Si tu empresa, conjunto residencial u organización te ha proporcionado un código de acceso, ingrésalo aquí para unirte a su red privada de estacionamientos.
-          </p>
-
-          <form (ngSubmit)="unirse()" class="mt-6 space-y-4">
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Código de Organización</label>
-              <div class="relative">
-                <input
-                  type="text"
-                  [(ngModel)]="codigoInvitacion"
-                  name="codigoInvitacion"
-                  placeholder="EJ: BOSQUE2026 o UNILASALLISTA"
-                  required
-                  class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-base font-mono uppercase tracking-wider text-blue-400 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                />
-              </div>
+          <div class="p-6 sm:p-8">
+            <div class="notch-sm mb-5 grid h-11 w-11 place-items-center border border-signal/25 bg-signal/[0.07] text-signal">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 7a2 2 0 0 1 2 2m4 0a6 6 0 0 1-7.7 5.7L11 17H9v2H7v2H4a1 1 0 0 1-1-1v-2.6a1 1 0 0 1 .3-.7l6-6A6 6 0 1 1 21 9Z"></path>
+              </svg>
             </div>
 
-            @if (errorMensaje()) {
-              <div class="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex items-center gap-2">
-                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="8" x2="12" y2="12"></line>
-                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                </svg>
-                <span>{{ errorMensaje() }}</span>
-              </div>
-            }
+            <h1 class="text-2xl font-semibold tracking-[-0.035em] text-chalk sm:text-3xl">Canjea tu código de acceso</h1>
+            <p class="mt-2 max-w-lg text-xs leading-relaxed text-mist sm:text-[0.8rem]">
+              Introduce el código que te entregó tu administrador para vincular tu cuenta a la red privada de estacionamientos de la sede.
+            </p>
 
-            @if (exitoMensaje()) {
-              <div class="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs flex items-center gap-2">
-                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-                <span>{{ exitoMensaje() }}</span>
+            <form (ngSubmit)="unirse()" class="mt-7 space-y-4">
+              <div>
+                <div class="mb-1.5 flex items-center justify-between">
+                  <label class="label mb-0" for="codigo">Código de organización</label>
+                  <button type="button" (click)="pegarCodigo()" class="mono text-[0.55rem] uppercase tracking-[0.14em] text-mist transition-colors hover:text-signal">
+                    Pegar código
+                  </button>
+                </div>
+                <div class="relative">
+                  <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-signal/60">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 11V7a4 4 0 1 1 8 0v4M6 11h12v10H6z"></path>
+                    </svg>
+                  </span>
+                  <input
+                    id="codigo"
+                    type="text"
+                    [(ngModel)]="codigoInvitacion"
+                    name="codigoInvitacion"
+                    placeholder="SGP-XXXXXX"
+                    required
+                    autocomplete="off"
+                    spellcheck="false"
+                    class="field field-mono h-14 pl-11 pr-4 text-base uppercase tracking-[0.18em]"
+                  />
+                </div>
+                <p class="mt-2 flex items-center gap-1.5 text-[0.6rem] text-mist/60">
+                  <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" stroke-width="1.6"></circle>
+                    <path stroke-linecap="round" stroke-width="1.6" d="M12 11v5m0-8.5v.01"></path>
+                  </svg>
+                  El código no distingue entre mayúsculas y minúsculas.
+                </p>
               </div>
-            }
 
-            <button
-              type="submit"
-              [disabled]="cargando() || !codigoInvitacion.trim()"
-              class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-sm shadow-lg shadow-blue-500/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-            >
-              @if (cargando()) {
-                <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                <span>Validando código...</span>
-              } @else {
-                <span>Unirme ahora</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-                </svg>
+              @if (errorMensaje()) {
+                <div class="flex items-start gap-2.5 rounded-md border border-danger/30 bg-danger/[0.07] p-3 text-[0.7rem] leading-relaxed text-danger">
+                  <svg class="mt-0.5 h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" stroke-width="1.8"></circle>
+                    <path stroke-linecap="round" stroke-width="1.8" d="M12 8v4m0 3.5v.01"></path>
+                  </svg>
+                  <span>{{ errorMensaje() }}</span>
+                </div>
               }
-            </button>
-          </form>
 
-          <!-- Help section (Slide 5 wireframe) -->
-          <div class="mt-8 pt-6 border-t border-slate-800 space-y-3">
-            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">¿Necesitas Ayuda?</h4>
-            <div class="text-xs text-slate-400 space-y-2">
-              <p>• <strong>¿Dónde encuentro un código?</strong> Consulta con el administrador de servicios de tu conjunto residencial, empresa o centro comercial.</p>
-              <p>• <strong>Acceso Seguro:</strong> Los códigos de invitación son únicos y garantizan que solo miembros autorizados accedan al mapa de casillas.</p>
+              @if (exitoMensaje()) {
+                <div class="flex items-start gap-2.5 rounded-md border border-ok/30 bg-ok/[0.07] p-3 text-[0.7rem] leading-relaxed text-ok">
+                  <svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 13 4 4 10-10"></path>
+                  </svg>
+                  <span>{{ exitoMensaje() }}</span>
+                </div>
+              }
+
+              <button
+                type="submit"
+                [disabled]="cargando() || !codigoInvitacion.trim()"
+                class="btn btn-signal h-11 w-full"
+              >
+                @if (cargando()) {
+                  <span class="h-4 w-4 animate-spin rounded-full border-2 border-void/25 border-t-void"></span>
+                  <span>Validando código…</span>
+                } @else {
+                  <span>Vincular mi cuenta</span>
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-5-5 5 5-5 5"></path>
+                  </svg>
+                }
+              </button>
+            </form>
+
+            <div class="mt-7 border-t border-edge pt-5">
+              <h3 class="mono mb-3 text-[0.55rem] uppercase tracking-[0.2em] text-mist">¿Dónde encuentro mi código?</h3>
+              <ul class="space-y-2 text-[0.7rem] leading-relaxed text-mist">
+                <li class="flex gap-2"><span class="mono text-signal">01</span> Solicítalo al administrador o a la administración del conjunto.</li>
+                <li class="flex gap-2"><span class="mono text-signal">02</span> Revísalo en el correo de bienvenida de tu organización.</li>
+              </ul>
             </div>
           </div>
-        </div>
+        </section>
 
-        <!-- Explanatory card (Right) (Slide 5 wireframe) -->
-        <div class="lg:col-span-5 bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-6 overflow-hidden relative shadow-xl">
-          <div class="rounded-xl overflow-hidden mb-5 border border-slate-800 bg-slate-800/50 aspect-video flex items-center justify-center relative">
-            <div class="absolute inset-0 bg-blue-900/20 backdrop-blur-[1px]"></div>
-            <div class="text-center p-4 relative z-10">
-              <div class="w-12 h-12 mx-auto rounded-full bg-blue-600/30 border border-blue-400/40 flex items-center justify-center mb-2 text-blue-300">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                </svg>
+        <!-- Panel lateral -->
+        <aside class="space-y-5 lg:col-span-5">
+          <div class="panel notch-tr overflow-hidden rise-2">
+            <div class="relative h-32 overflow-hidden border-b border-edge bg-[#070a10]">
+              <div class="absolute inset-0 line-grid opacity-60"></div>
+              <div class="absolute inset-0 bg-gradient-to-br from-flow/10 via-transparent to-signal/10"></div>
+              <div class="absolute inset-x-5 top-1/2 flex -translate-y-1/2 items-center gap-2">
+                <span class="mono text-[0.5rem] uppercase tracking-[0.18em] text-mist">Red</span>
+                <div class="relative h-px flex-1 border-t border-dashed border-white/20"></div>
+                <div class="notch-sm grid h-12 w-12 place-items-center border border-signal/30 bg-signal/10 text-signal">
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 21V9m0 0 4 4m-4-4-4 4M5 5h14"></path>
+                  </svg>
+                </div>
+                <div class="relative h-px flex-1 border-t border-dashed border-white/20"></div>
+                <span class="mono text-[0.5rem] uppercase tracking-[0.18em] text-mist">Sede</span>
               </div>
-              <span class="text-xs font-semibold uppercase text-blue-300 tracking-wider">Acceso Mediante Código</span>
-              <p class="text-[11px] text-slate-300 mt-1 max-w-xs mx-auto">
-                Solo quienes reciben una invitación pueden ingresar al sistema del parqueadero.
+              <div class="absolute bottom-3 left-5 right-5 flex items-center justify-between">
+                <span class="mono text-[0.5rem] uppercase tracking-[0.16em] text-mist/60">Conexión cifrada</span>
+                <span class="mono text-[0.5rem] text-ok">● activa</span>
+              </div>
+            </div>
+
+            <div class="p-5">
+              <h2 class="text-sm font-semibold text-chalk">Acceso mediante invitación</h2>
+              <p class="mt-1.5 text-[0.7rem] leading-relaxed text-mist">
+                Solo los miembros autorizados pueden ver el plano, reservar puestos y consultar la ocupación de esta sede.
               </p>
+              <div class="mt-4 space-y-2.5">
+                <div class="flex items-center gap-2.5 rounded-md border border-edge bg-white/[0.02] px-3 py-2.5">
+                  <span class="tag tag-ok">01</span>
+                  <span class="text-[0.68rem] text-mist">Validación instantánea con el servidor</span>
+                </div>
+                <div class="flex items-center gap-2.5 rounded-md border border-edge bg-white/[0.02] px-3 py-2.5">
+                  <span class="tag tag-flow">02</span>
+                  <span class="text-[0.68rem] text-mist">Acceso al mapa y reservas al instante</span>
+                </div>
+                <div class="flex items-center gap-2.5 rounded-md border border-edge bg-white/[0.02] px-3 py-2.5">
+                  <span class="tag tag-signal">03</span>
+                  <span class="text-[0.68rem] text-mist">Sincronización en tiempo real</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="p-4 bg-slate-950/60 rounded-xl border border-slate-800 text-xs text-slate-400 leading-relaxed">
-            Cada código de invitación es asignado y validado en tiempo real. Al unirte, tendrás acceso instantáneo para ver casillas libres y gestionar tus reservas desde tu dispositivo.
+          <div class="panel-flat flex items-start gap-3 p-4">
+            <span class="mt-0.5 text-signal">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 3 5 6v5c0 4.4 2.9 8.3 7 9.5 4.1-1.2 7-5.1 7-9.5V6l-7-3Z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="m9 12 2 2 4-4"></path>
+              </svg>
+            </span>
+            <p class="text-[0.68rem] leading-relaxed text-mist">
+              <strong class="text-chalk">Privacidad corporativa.</strong> Tu historial y placas solo son visibles para las organizaciones a las que perteneces.
+            </p>
           </div>
-        </div>
+        </aside>
       </div>
-    </div>
+    </main>
   `
 })
 export class UnirseCodigoComponent {
@@ -130,6 +190,15 @@ export class UnirseCodigoComponent {
   cargando = signal<boolean>(false);
   errorMensaje = signal<string | null>(null);
   exitoMensaje = signal<string | null>(null);
+
+  async pegarCodigo(): Promise<void> {
+    try {
+      const texto = await navigator.clipboard.readText();
+      if (texto?.trim()) this.codigoInvitacion = texto.trim().toUpperCase();
+    } catch {
+      // El navegador puede bloquear el portapapeles: el usuario puede escribir el código.
+    }
+  }
 
   unirse(): void {
     if (!this.codigoInvitacion.trim()) return;
