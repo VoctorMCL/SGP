@@ -1,7 +1,7 @@
 'use strict';
 
-let mongoose = require('mongoose');
-let application = require('../server/applications');
+const mongoose = require('mongoose');
+const app = require('../server/app');
 
 let isConnected = false;
 
@@ -11,7 +11,7 @@ async function conectarDB() {
     }
     const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/parqueo";
     try {
-        let db = await mongoose.connect(MONGO_URI);
+        const db = await mongoose.connect(MONGO_URI);
         isConnected = db.connections[0].readyState === 1;
         console.log("Conectado a MongoDB en Vercel Serverless");
     } catch (err) {
@@ -21,5 +21,5 @@ async function conectarDB() {
 
 module.exports = async (req, res) => {
     await conectarDB();
-    return application(req, res);
+    return app(req, res);
 };

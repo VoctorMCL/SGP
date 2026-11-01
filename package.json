@@ -3,14 +3,17 @@
   "version": "1.0.0",
   "description": "SGP - Sistema de Gestión de Parqueo (Fullstack Angular + Express + MongoDB)",
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "node --watch server/index.js",
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js",
     "dev:ui": "ng serve",
     "build": "ng build",
     "seed": "node server/seed.js",
+    "mobile:ip": "node scripts/set-mobile-ip.js",
+    "build:mobile": "npm run mobile:ip && ng build && npx cap sync android",
     "cap:sync": "npx cap sync",
     "cap:android": "npx cap open android"
   },
+
   "keywords": [
     "parqueadero",
     "angular",
@@ -27,6 +30,7 @@
     "@angular/forms": "^22.2.0",
     "@angular/platform-browser": "^22.2.0",
     "@angular/router": "^22.2.0",
+    "@capacitor/android": "^8.6.0",
     "@capacitor/core": "^8.5.3",
     "@vercel/analytics": "^2.0.1",
     "bcrypt": "^6.0.0",
