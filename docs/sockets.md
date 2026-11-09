@@ -4,9 +4,9 @@ El sistema usa **Socket.io** para mantener actualizado el mapa de parqueo en tie
 
 ## Inicialización
 
-**Archivo:** `server/helpers/socket.js`
+**Archivo:** `backend/helpers/socket.js`
 
-Se inicializa desde `server/server.js`:
+Se inicializa desde `backend/server.js`:
 ```js
 let server = http.createServer(app);
 socketHelper.init(server);
@@ -24,7 +24,7 @@ io = new Server(server, {
 
 ## Cliente (Frontend)
 
-**Archivo:** `src/app/core/services/socket.service.ts`
+**Archivo:** `frontend/src/app/core/services/socket.service.ts`
 
 ```js
 this.socket = io(environment.socketUrl, {

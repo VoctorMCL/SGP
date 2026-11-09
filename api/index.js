@@ -1,7 +1,7 @@
 'use strict';
 
 const mongoose = require('mongoose');
-const app = require('../server/app');
+const app = require('../backend/app');
 
 let isConnected = false;
 

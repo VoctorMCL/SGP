@@ -29,15 +29,19 @@ SGP/
 ├── scripts/             # Scripts utilitarios
 │   └── set-mobile-ip.js # Detecta IP local y actualiza environments para móvil
 │
-├── src/                 # FRONTEND: Angular 22 + Tailwind CSS v4
-│   ├── app/
-│   │   ├── core/        # Servicios (Auth, Socket, Casillas, Reservas), Guards e Interceptores
-│   │   ├── shared/      # Componentes compartidos (Navbar, etc.)
-│   │   └── features/    # Vistas por módulo (auth, organizaciones, parqueadero-mapa, admin-dashboard)
-│   ├── environments/    # Configuración de URLs por ambiente (web/nativo)
-│   └── styles.css
+├── frontend/            # FRONTEND: Angular 22 + Tailwind CSS v4
+│   ├── public/          # Recursos estáticos (favicon, etc.)
+│   └── src/
+│       ├── app/
+│       │   ├── core/    # Servicios (Auth, Socket, Casillas, Reservas), Guards e Interceptores
+│       │   ├── shared/  # Componentes compartidos (Navbar, etc.)
+│       │   └── features/ # Vistas por módulo (auth, organizaciones, parqueadero-mapa, admin-dashboard)
+│       ├── environments/ # Configuración de URLs por ambiente (web/nativo)
+│       ├── index.html
+│       ├── main.ts
+│       └── styles.css
 │
-├── server/              # BACKEND: Express 5 + MongoDB + Socket.io
+├── backend/             # BACKEND: Express 5 + MongoDB + Socket.io
 │   ├── app.js           # Configuración pura de Express (middlewares, rutas, estáticos, SPA fallback)
 │   ├── server.js        # Arranque puro (conexión BD, HTTP + Socket.io, listen)
 │   ├── config/
@@ -153,7 +157,7 @@ npm run build:mobile
 ```
 
 Este comando hace:
-1. `mobile:ip` → Detecta automáticamente la IP de tu PC en esa red WiFi y la escribe en `src/environments/environment.ts` y `src/environments/environment.prod.ts`
+1. `mobile:ip` → Detecta automáticamente la IP de tu PC en esa red WiFi y la escribe en `frontend/src/environments/environment.ts` y `frontend/src/environments/environment.prod.ts`
 2. `ng build` → Compila Angular para producción
 3. `npx cap sync android` → Copia los archivos compilados a la carpeta `android/`
 
@@ -197,7 +201,7 @@ Listo. No tienes que editar archivos a mano.
 
 | Script | Descripción |
 |---|---|
-| `npm start` | Levanta el servidor con `server/server.js` (producción/local unificado) |
+| `npm start` | Levanta el servidor con `backend/server.js` (producción/local unificado) |
 | `npm run dev` | Igual que `start` pero con `--watch` para reiniciar el backend al guardar cambios |
 | `npm run dev:ui` | Corre Angular con `ng serve` (útil para desarrollo con hot-reload) |
 | `npm run build` | Compila el frontend Angular a `dist/frontend/browser/` |
@@ -221,7 +225,7 @@ Listo. No tienes que editar archivos a mano.
 
 ## Notas Importantes
 
-- **Estructura limpia**: El backend ahora está separado en `app.js` (configuración) y `server.js` (arranque). Mucho más fácil de entender.
+- **Estructura limpia**: El código está separado en `backend/` (Express + MongoDB + Socket.io) y `frontend/` (Angular + Tailwind). El backend mantiene `app.js` (configuración) y `server.js` (arranque), con sus carpetas `routes/`, `controllers/`, `models/` y `helpers/`.
 - **Móvil automático**: Los `environments` usan `Capacitor.isNativePlatform()` para decidir si usar rutas relativas o la IP de tu PC.
 - **HTTP en red local**: Se añadió `android:usesCleartextTraffic="true"` y `network_security_config.xml` para permitir conexión HTTP con tu servidor local.
 - **WebSockets**: Funcionan tanto en web (`/`) como en móvil apuntando a `http://IP:2305`

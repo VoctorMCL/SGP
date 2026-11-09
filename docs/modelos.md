@@ -1,10 +1,10 @@
 # Modelos de Datos
 
-Todos los modelos están definidos con **Mongoose** en `server/models/`. Los nombres de colección en MongoDB se indican entre paréntesis.
+Todos los modelos están definidos con **Mongoose** en `backend/models/`. Los nombres de colección en MongoDB se indican entre paréntesis.
 
 ## Usuario (`usuarios`)
 
-**Archivo:** `server/models/usuario.js`
+**Archivo:** `backend/models/usuario.js`
 
 ```js
 {
@@ -26,7 +26,7 @@ Todos los modelos están definidos con **Mongoose** en `server/models/`. Los nom
 
 ## Organización (`organizaciones`)
 
-**Archivo:** `server/models/organizacion.js`
+**Archivo:** `backend/models/organizacion.js`
 
 ```js
 {
@@ -53,7 +53,7 @@ Todos los modelos están definidos con **Mongoose** en `server/models/`. Los nom
 
 ## Casilla (`casillas`)
 
-**Archivo:** `server/models/casilla.js`
+**Archivo:** `backend/models/casilla.js`
 
 ```js
 {
@@ -76,7 +76,7 @@ Todos los modelos están definidos con **Mongoose** en `server/models/`. Los nom
 
 ## Reserva (`reservas`)
 
-**Archivo:** `server/models/reserva.js`
+**Archivo:** `backend/models/reserva.js`
 
 ```js
 {

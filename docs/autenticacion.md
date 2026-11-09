@@ -12,7 +12,7 @@ El sistema usa **JWT (JSON Web Tokens)** para autenticar usuarios. Los tokens se
 
 ## Generación de Token
 
-**Archivo:** `server/helpers/auth.js`
+**Archivo:** `backend/helpers/auth.js`
 
 ```js
 let payload = {
@@ -32,10 +32,10 @@ return jwt.encode(payload, secret)
 
 | Middleware | Archivo | Descripción |
 |---|---|---|
-| `validarToken` | `server/helpers/auth.js` | Verifica que el token sea válido. Extrae `id` y `rol` del payload y los guarda en `req.usuario`. Retorna `401` si es inválido o falta. |
-| `validarAdministrador` | `server/helpers/auth.js` | Requiere que `req.usuario.rol === 'administrador'`. Retorna `403` si no lo es. |
-| `validarGuardiaOAdmin` | `server/helpers/auth.js` | Requiere `rol === 'guardia'` o `rol === 'administrador'`. Retorna `403` si no cumple. |
-| `esStaff(rol)` | `server/helpers/auth.js` | Función helper para verificar si un rol es staff (guardia o administrador). |
+| `validarToken` | `backend/helpers/auth.js` | Verifica que el token sea válido. Extrae `id` y `rol` del payload y los guarda en `req.usuario`. Retorna `401` si es inválido o falta. |
+| `validarAdministrador` | `backend/helpers/auth.js` | Requiere que `req.usuario.rol === 'administrador'`. Retorna `403` si no lo es. |
+| `validarGuardiaOAdmin` | `backend/helpers/auth.js` | Requiere `rol === 'guardia'` o `rol === 'administrador'`. Retorna `403` si no cumple. |
+| `esStaff(rol)` | `backend/helpers/auth.js` | Función helper para verificar si un rol es staff (guardia o administrador). |
 
 ## Roles del Sistema
 

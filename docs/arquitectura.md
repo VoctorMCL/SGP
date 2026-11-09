@@ -38,19 +38,19 @@ SGP es una aplicación **fullstack unificada**. Todo corre desde un solo proyect
 ## Organización del Código
 
 ### Backend
-- **`server/app.js`** - Configuración pura de Express. Define middlewares, monta rutas, sirve estáticos de Angular y maneja el fallback SPA.
-- **`server/server.js`** - Arranque puro. Carga `.env`, conecta a MongoDB, crea servidor HTTP, inicializa Socket.io y pone a escuchar.
-- **`server/config/db.js`** - Función reutilizable para conectar a MongoDB.
-- **`server/routes/`** - Definición de rutas con sus respectivos middlewares de autenticación/autorización.
-- **`server/controllers/`** - Lógica de negocio por recurso.
-- **`server/models/`** - Esquemas Mongoose.
-- **`server/helpers/`** - Utilidades transversales (`auth.js`, `socket.js`, `validacion.js`).
+- **`backend/app.js`** - Configuración pura de Express. Define middlewares, monta rutas, sirve estáticos de Angular y maneja el fallback SPA.
+- **`backend/server.js`** - Arranque puro. Carga `.env`, conecta a MongoDB, crea servidor HTTP, inicializa Socket.io y pone a escuchar.
+- **`backend/config/db.js`** - Función reutilizable para conectar a MongoDB.
+- **`backend/routes/`** - Definición de rutas con sus respectivos middlewares de autenticación/autorización.
+- **`backend/controllers/`** - Lógica de negocio por recurso.
+- **`backend/models/`** - Esquemas Mongoose.
+- **`backend/helpers/`** - Utilidades transversales (`auth.js`, `socket.js`, `validacion.js`).
 
 ### Frontend
-- **`src/app/core/`** - Servicios, guards, interceptores y modelos compartidos.
-- **`src/app/shared/`** - Componentes reutilizables.
-- **`src/app/features/`** - Módulos/pantallas por funcionalidad (`auth`, `organizaciones`, `parqueadero-mapa`, `admin-dashboard`).
-- **`src/environments/`** - Configuración dinámica de URLs para web vs nativo.
+- **`frontend/src/app/core/`** - Servicios, guards, interceptores y modelos compartidos.
+- **`frontend/src/app/shared/`** - Componentes reutilizables.
+- **`frontend/src/app/features/`** - Módulos/pantallas por funcionalidad (`auth`, `organizaciones`, `parqueadero-mapa`, `admin-dashboard`).
+- **`frontend/src/environments/`** - Configuración dinámica de URLs para web vs nativo.
 
 ### Móvil
 - **`capacitor.config.ts`** - Configuración base de Capacitor
