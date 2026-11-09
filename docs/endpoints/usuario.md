@@ -22,7 +22,7 @@ Crea una nueva cuenta de usuario.
   "telefono": "3001234567",
   "correo": "juan.perez@email.com",
   "password": "123456",
-  "placas": ["ABC123", "XYZ789"],  // Opcional
+  "placas": ["ABC-123", "XYZ-789"], // Opcional
   "rol": "usuario"                  // Opcional: 'administrador' | 'guardia' | 'usuario' (default: 'usuario')
 }
 ```
@@ -31,13 +31,13 @@ Crea una nueva cuenta de usuario.
 
 | Campo | Requerido | Validación |
 |---|---|---|
-| `nombre` | Sí | Texto válido |
-| `apellido` | Sí | Texto válido |
-| `documento` | Sí | Texto válido (único) |
+| `nombre` | Sí | Texto válido. Se normaliza a primera letra mayúscula y el resto minúscula |
+| `apellido` | Sí | Texto válido. Se normaliza a primera letra mayúscula y el resto minúscula |
+| `documento` | Sí | Texto válido (único, se recorta) |
 | `telefono` | Sí | Exactamente 10 dígitos numéricos |
 | `correo` | Sí | Formato válido con `@` y `.` (único, se guarda en minúsculas) |
 | `password` | Sí | Texto válido |
-| `placas` | No | Debe ser array de textos si se envía |
+| `placas` | No | Array de textos. Cada placa debe tener 3 letras y 3 números, con separador opcional espacio, `-` o `_` (ej. `ABC-123`, `ABC 123`, `ABC_123`, `ABC123`). Se guarda como `ABC-123` |
 | `rol` | No | Debe ser `administrador`, `guardia` o `usuario` |
 
 ### Respuestas
@@ -53,7 +53,7 @@ Crea una nueva cuenta de usuario.
     "documento": "1234567890",
     "telefono": "3001234567",
     "correo": "juan.perez@email.com",
-    "placas": ["ABC123"],
+    "placas": ["ABC-123"],
     "rol": "usuario"
     // password NO se devuelve
   }
@@ -67,6 +67,7 @@ Crea una nueva cuenta de usuario.
 { "message": "Ya existe un usuario registrado con ese documento" }
 { "message": "El telefono debe tener exactamente 10 digitos" }
 { "message": "El rol debe ser administrador, guardia o usuario" }
+{ "message": "Cada placa debe tener el formato ABC-123 (tres letras y tres numeros)" }
 ```
 
 **500 Internal Server Error**
@@ -143,7 +144,7 @@ Obtiene la información del usuario autenticado.
     "documento": "1234567890",
     "telefono": "3001234567",
     "correo": "juan.perez@email.com",
-    "placas": ["ABC123"],
+    "placas": ["ABC-123"],
     "rol": "usuario"
   }
 }
@@ -211,3 +212,32 @@ Restablece la contraseña de un usuario verificando su correo y su documento de 
 ```
 
 > La verificación se hace con correo + documento. Si ambos coinciden, la contraseña se reemplaza inmediatamente; no se envía ningún correo.
+
+## 5. Verificar Disponibilidad
+
+Comprueba si un correo y/o documento ya están registrados. Se usa durante la creación de cuenta para avisar antes de enviar el formulario. La validación definitiva sigue ocurriendo en `POST /api/usuario/registrar`.
+
+- **URL:** `GET /api/usuario/disponible`
+- **Auth:** No requiere
+- **Query params:** `correo` y/o `documento` (opcionales; si se omite uno, se devuelve disponible)
+
+### Ejemplo
+
+```http
+GET /api/usuario/disponible?correo=juan@email.com&documento=1234567890
+```
+
+### Respuestas
+
+**200 OK**
+```json
+{
+  "correoDisponible": false,
+  "documentoDisponible": true
+}
+```
+
+**500 Internal Server Error**
+```json
+{ "message": "Error al verificar la disponibilidad" }
+```

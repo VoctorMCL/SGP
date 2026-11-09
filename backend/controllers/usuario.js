@@ -36,26 +36,39 @@ function registrarUsuario(req, resp) {
         return resp.status(400).send({ "message": "Cada placa debe ser un texto no vacio" });
     }
 
-    Usuarios.findOne({ "correo": requestBody.correo.toLowerCase() }).then(
+    let nombre = validacion.normalizarNombre(requestBody.nombre);
+    let apellido = validacion.normalizarNombre(requestBody.apellido);
+    let documento = String(requestBody.documento).trim();
+    let correo = String(requestBody.correo).trim().toLowerCase();
+    let telefono = String(requestBody.telefono).trim();
+    let placas = (requestBody.placas || []).map((placa) => String(placa).trim());
+
+    if (placas.some((placa) => !validacion.placaValida(placa))) {
+        return resp.status(400).send({ "message": "Cada placa debe tener el formato ABC-123 (tres letras y tres numeros)" });
+    }
+
+    placas = [...new Set(placas.map((placa) => validacion.normalizarPlaca(placa)))];
+
+    Usuarios.findOne({ "correo": correo }).then(
         (usuarioExistente) => {
             if (usuarioExistente) {
                 return resp.status(400).send({ "message": "Ya existe un usuario registrado con ese correo" });
             }
 
-            Usuarios.findOne({ "documento": requestBody.documento }).then(
+            Usuarios.findOne({ "documento": documento }).then(
                 (documentoExistente) => {
                     if (documentoExistente) {
                         return resp.status(400).send({ "message": "Ya existe un usuario registrado con ese documento" });
                     }
 
                     let usuario = new Usuarios({
-                        "nombre": requestBody.nombre,
-                        "apellido": requestBody.apellido,
-                        "documento": requestBody.documento,
-                        "telefono": requestBody.telefono,
-                        "correo": requestBody.correo.toLowerCase(),
+                        "nombre": nombre,
+                        "apellido": apellido,
+                        "documento": documento,
+                        "telefono": telefono,
+                        "correo": correo,
                         "password": bcrypt.hashSync(requestBody.password, 10),
-                        "placas": requestBody.placas || [],
+                        "placas": placas,
                         "rol": requestBody.rol || 'usuario'
                     });
 
@@ -77,6 +90,26 @@ function registrarUsuario(req, resp) {
         },
         err => {
             errorInterno(resp, "Error al validar el correo", err);
+        }
+    );
+}
+
+function verificarDisponibilidad(req, resp) {
+    let correo = validacion.texto(req.query.correo) ? req.query.correo.trim().toLowerCase() : null;
+    let documento = validacion.texto(req.query.documento) ? req.query.documento.trim() : null;
+
+    Promise.all([
+        correo ? Usuarios.findOne({ "correo": correo }).then((usuario) => !!usuario) : Promise.resolve(false),
+        documento ? Usuarios.findOne({ "documento": documento }).then((usuario) => !!usuario) : Promise.resolve(false)
+    ]).then(
+        ([correoEnUso, documentoEnUso]) => {
+            resp.status(200).send({
+                "correoDisponible": correo ? !correoEnUso : true,
+                "documentoDisponible": documento ? !documentoEnUso : true
+            });
+        },
+        err => {
+            errorInterno(resp, "Error al verificar la disponibilidad", err);
         }
     );
 }
@@ -159,4 +192,4 @@ function perfilUsuario(req, resp) {
     );
 }
 
-module.exports = { registrarUsuario, loguearUsuario, recuperarPassword, perfilUsuario };
+module.exports = { registrarUsuario, verificarDisponibilidad, loguearUsuario, recuperarPassword, perfilUsuario };

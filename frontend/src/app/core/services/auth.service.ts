@@ -1,5 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -75,6 +75,20 @@ export class AuthService {
 
   recuperarPassword(datos: { correo: string; documento: string; password: string }): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${environment.apiUrl}/usuario/recuperar`, datos);
+  }
+
+  verificarDisponibilidad(correo: string, documento: string): Observable<{ correoDisponible: boolean; documentoDisponible: boolean }> {
+    let params = new HttpParams();
+    if (correo) {
+      params = params.set('correo', correo);
+    }
+    if (documento) {
+      params = params.set('documento', documento);
+    }
+    return this.http.get<{ correoDisponible: boolean; documentoDisponible: boolean }>(
+      `${environment.apiUrl}/usuario/disponible`,
+      { params }
+    );
   }
 
   getPerfil(): Observable<{ usuario: Usuario }> {

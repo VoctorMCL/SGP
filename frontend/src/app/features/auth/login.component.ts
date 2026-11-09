@@ -1,7 +1,18 @@
 import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import {
+  FormsModule,
+  ReactiveFormsModule,
+  FormBuilder,
+  Validators,
+  AbstractControl,
+  AsyncValidatorFn,
+  ValidationErrors,
+  ValidatorFn
+} from '@angular/forms';
+import { Router } from '@angular/router';
+import { Observable, of, timer } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
 
 type CasillaDemo = {
@@ -17,7 +28,7 @@ type CasillaDemo = {
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   template: `
     <div class="relative min-h-screen overflow-hidden lg:grid lg:grid-cols-[1.08fr_0.92fr]">
       <!-- ── Panel editorial ───────────────────────────────────── -->
@@ -32,13 +43,11 @@ type CasillaDemo = {
         <div class="relative z-10">
           <!-- Marca -->
           <div class="flex items-center gap-4">
-            <div class="notch-sm relative grid h-14 w-14 place-items-center bg-signal text-void shadow-[0_0_40px_-8px_rgba(203,213,225,0.5)]">
-              <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square">
-                <path d="M7.5 18V6h5.2a3.6 3.6 0 1 1 0 7.2H8.4" />
-                <path d="M7.5 13.2h5.2" />
-              </svg>
-              <span class="absolute -bottom-px -right-px h-2.5 w-2.5 bg-flow"></span>
-            </div>
+            <img
+              src="favicon.svg"
+              alt="Logo SGP"
+              class="h-14 w-14 shrink-0 drop-shadow-[0_0_24px_rgba(203,213,225,0.28)]"
+            />
             <div>
               <div class="flex items-baseline gap-2.5">
                 <span class="text-3xl sm:text-4xl font-bold tracking-tight text-chalk">SGP</span>
@@ -91,7 +100,7 @@ type CasillaDemo = {
                             ? ' ring-2 ring-signal ring-offset-1 ring-offset-[#080b11]'
                             : ' hover:brightness-110')"
                       >
-                        <span class="mono text-[0.72rem] font-bold tracking-wider">{{ slot.codigo }}</span>
+                        <span class="font-sans text-[0.72rem] font-bold tracking-wide">{{ slot.codigo }}</span>
                         <span class="h-1.5 w-1.5 rounded-full" [class]="slot.ocupado ? 'bg-danger' : 'bg-ok'"></span>
                       </button>
                     }
@@ -129,7 +138,7 @@ type CasillaDemo = {
                             : ' hover:brightness-110')"
                       >
                         <span class="h-1.5 w-1.5 rounded-full" [class]="slot.ocupado ? 'bg-danger' : 'bg-ok'"></span>
-                        <span class="mono text-[0.72rem] font-bold tracking-wider">{{ slot.codigo }}</span>
+                        <span class="font-sans text-[0.72rem] font-bold tracking-wide">{{ slot.codigo }}</span>
                       </button>
                     }
                   </div>
@@ -153,7 +162,7 @@ type CasillaDemo = {
                       </div>
 
                       <div class="mt-2 flex items-baseline justify-between gap-2">
-                        <span class="mono text-2xl font-bold tracking-tight text-chalk">{{ detalleCasilla.codigo }}</span>
+                        <span class="font-sans text-2xl font-bold tracking-tight text-chalk">{{ detalleCasilla.codigo }}</span>
                         <span class="mono text-[0.55rem] uppercase tracking-wider text-mist/70">{{ detalleCasilla.tipo }}</span>
                       </div>
 
@@ -217,7 +226,7 @@ type CasillaDemo = {
           <div class="absolute left-0 top-0 h-full w-px bg-gradient-to-b from-transparent via-signal/20 to-transparent"></div>
         </div>
 
-        <div class="relative z-10 w-full max-w-[28rem]">
+        <div class="relative z-10 w-full max-w-[28rem] overflow-x-clip">
           <div class="mb-8">
             <h2 class="text-3xl font-semibold tracking-tight text-chalk">
               {{ modoRecuperacion() ? 'Recuperar contraseña' : 'Bienvenido a SGP' }}
@@ -236,7 +245,7 @@ type CasillaDemo = {
             <div class="mb-7 flex border-b border-edge">
               <button
                 type="button"
-                (click)="tabActiva.set('login')"
+                (click)="cambiarTab('login')"
                 class="relative px-2 pb-3.5 pr-8 text-sm sm:text-base font-semibold transition-colors"
                 [class.text-chalk]="tabActiva() === 'login'"
                 [class.text-mist]="tabActiva() !== 'login'"
@@ -248,7 +257,7 @@ type CasillaDemo = {
               </button>
               <button
                 type="button"
-                (click)="tabActiva.set('register')"
+                (click)="cambiarTab('register')"
                 class="relative px-2 pb-3.5 text-sm sm:text-base font-semibold transition-colors"
                 [class.text-chalk]="tabActiva() === 'register'"
                 [class.text-mist]="tabActiva() !== 'register'"
@@ -376,7 +385,12 @@ type CasillaDemo = {
           }
 
           @if (!modoRecuperacion() && tabActiva() === 'login') {
-            <form [formGroup]="loginForm" (ngSubmit)="onSubmitLogin()" class="space-y-5">
+            <form
+              [formGroup]="loginForm"
+              (ngSubmit)="onSubmitLogin()"
+              class="space-y-5"
+              [class.tab-slide-der-izq]="direccionTab() === 'derecha-izquierda'"
+            >
               <div>
                 <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block" for="login-correo">Correo electrónico</label>
                 <div class="relative">
@@ -451,38 +465,109 @@ type CasillaDemo = {
           }
 
           @if (!modoRecuperacion() && tabActiva() === 'register') {
-            <form [formGroup]="registerForm" (ngSubmit)="onSubmitRegister()" class="space-y-3.5">
+            <form
+              [formGroup]="registerForm"
+              (ngSubmit)="onSubmitRegister()"
+              class="space-y-3.5"
+              [class.tab-slide-izq-der]="direccionTab() === 'izquierda-derecha'"
+            >
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block">Nombre</label>
-                  <input type="text" formControlName="nombre" placeholder="Juan" class="field text-sm h-11" />
+                  <input
+                    type="text"
+                    formControlName="nombre"
+                    autocomplete="given-name"
+                    placeholder="Juan"
+                    class="field text-sm h-11"
+                    (blur)="normalizarCampo('nombre')"
+                  />
                 </div>
                 <div>
                   <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block">Apellido</label>
-                  <input type="text" formControlName="apellido" placeholder="Pérez" class="field text-sm h-11" />
+                  <input
+                    type="text"
+                    formControlName="apellido"
+                    autocomplete="family-name"
+                    placeholder="Pérez"
+                    class="field text-sm h-11"
+                    (blur)="normalizarCampo('apellido')"
+                  />
                 </div>
               </div>
 
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block">Documento</label>
-                  <input type="text" formControlName="documento" placeholder="10001000" class="field field-mono text-sm h-11" />
+                  <input
+                    type="text"
+                    formControlName="documento"
+                    autocomplete="off"
+                    placeholder="10001000"
+                    class="field field-mono text-sm h-11"
+                    (blur)="normalizarCampo('documento')"
+                  />
+                  @if (registerForm.controls.documento.hasError('documentoEnUso')) {
+                    <p class="mt-1.5 text-[0.7rem] leading-relaxed text-danger">Este documento ya está registrado.</p>
+                  }
                 </div>
                 <div>
                   <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block">Teléfono</label>
-                  <input type="text" formControlName="telefono" placeholder="3001234567" class="field field-mono text-sm h-11" />
+                  <input
+                    type="text"
+                    formControlName="telefono"
+                    inputmode="numeric"
+                    autocomplete="tel"
+                    placeholder="3001234567"
+                    class="field field-mono text-sm h-11"
+                    (blur)="normalizarCampo('telefono')"
+                  />
                 </div>
               </div>
 
               <div>
                 <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block">Correo electrónico</label>
-                <input type="email" formControlName="correo" placeholder="juan@empresa.com" class="field text-sm h-11" />
+                <input
+                  type="email"
+                  formControlName="correo"
+                  autocomplete="email"
+                  placeholder="juan@empresa.com"
+                  class="field text-sm h-11"
+                />
+                @if (registerForm.controls.correo.hasError('correoEnUso')) {
+                  <p class="mt-1.5 text-[0.7rem] leading-relaxed text-danger">Este correo ya está registrado.</p>
+                }
               </div>
 
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block">Contraseña</label>
-                  <input type="password" formControlName="password" placeholder="••••••••" class="field text-sm h-11" />
+                  <div class="relative">
+                    <input
+                      [type]="verPassword() ? 'text' : 'password'"
+                      formControlName="password"
+                      autocomplete="new-password"
+                      placeholder="••••••••"
+                      class="field text-sm h-11 pr-10"
+                    />
+                    <button
+                      type="button"
+                      (click)="verPassword.set(!verPassword())"
+                      class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-mist/70 transition-colors hover:text-chalk"
+                      [attr.aria-label]="verPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                    >
+                      @if (verPassword()) {
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M3 3l18 18M10.6 10.7a2 2 0 0 0 2.8 2.8M9.9 5.2A10.8 10.8 0 0 1 12 5c5 0 9 4.5 9 7a11 11 0 0 1-2.4 3.4M6.1 6.6C3.9 8 2.6 10.2 3 12c.7 2.5 4.3 5 9 5 1 0 2-.2 2.9-.5"></path>
+                        </svg>
+                      } @else {
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-width="1.7" d="M3 12c.7-2.5 4.3-5 9-5s8.3 2.5 9 5c-.7 2.5-4.3 5-9 5s-8.3-2.5-9-5Z"></path>
+                          <circle cx="12" cy="12" r="2.4" stroke-width="1.7"></circle>
+                        </svg>
+                      }
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block">Rol</label>
@@ -496,10 +581,23 @@ type CasillaDemo = {
 
               <div>
                 <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block">Placas <span class="normal-case tracking-normal text-mist/60">(separadas por coma)</span></label>
-                <input type="text" formControlName="placasStr" placeholder="ABC-123, XYZ-789" class="field field-mono text-sm uppercase h-11" />
+                <input
+                  type="text"
+                  formControlName="placasStr"
+                  placeholder="ABC-123, XYZ-789"
+                  class="field field-mono text-sm uppercase h-11"
+                  (blur)="normalizarCampo('placasStr')"
+                />
+                @if (registerForm.controls.placasStr.hasError('placaInvalida')) {
+                  <p class="mt-1.5 text-[0.7rem] leading-relaxed text-danger">
+                    La placa "{{ registerForm.controls.placasStr.getError('placaInvalida') }}" no es válida. Usa el formato ABC-123 y separa varias con coma.
+                  </p>
+                } @else {
+                  <p class="mt-1.5 text-[0.7rem] leading-relaxed text-mist/60">Formato ABC-123. Se aceptan espacios, guion o guion bajo entre letras y números.</p>
+                }
               </div>
 
-              <button type="submit" [disabled]="cargando()" class="btn btn-signal mt-2 h-12 w-full text-sm sm:text-base font-bold">
+              <button type="submit" [disabled]="cargando() || registerForm.pending" class="btn btn-signal mt-2 h-12 w-full text-sm sm:text-base font-bold">
                 @if (cargando()) {
                   <span class="h-4 w-4 animate-spin rounded-full border-2 border-void/25 border-t-void"></span>
                   <span>Creando cuenta…</span>
@@ -512,22 +610,36 @@ type CasillaDemo = {
               </button>
             </form>
           }
-
-          @if (!modoRecuperacion()) {
-            <div class="mt-8 flex items-center justify-between border-t border-edge pt-5">
-              <a routerLink="/unirse" class="group inline-flex items-center gap-2 text-sm font-medium text-mist transition-colors hover:text-chalk">
-                <svg class="h-4 w-4 text-signal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 7a2 2 0 0 1 2 2m4 0a6 6 0 0 1-7.7 5.7L11 17H9v2H7v2H4a1 1 0 0 1-1-1v-2.6a1 1 0 0 1 .3-.7l6-6A6 6 0 1 1 21 9Z"></path>
-                </svg>
-                Tengo un código de invitación
-                <span class="transition-transform group-hover:translate-x-0.5">→</span>
-              </a>
-            </div>
-          }
         </div>
       </section>
     </div>
-  `
+  `,
+  styles: [`
+    @keyframes tab-enter-from-left {
+      from { opacity: 0; transform: translateX(-2rem); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes tab-enter-from-right {
+      from { opacity: 0; transform: translateX(2rem); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .tab-slide-izq-der {
+      animation: tab-enter-from-left 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .tab-slide-der-izq {
+      animation: tab-enter-from-right 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .tab-slide-izq-der,
+      .tab-slide-der-izq {
+        animation: none;
+      }
+    }
+  `]
 })
 export class LoginComponent {
   private fb = inject(FormBuilder);
@@ -535,6 +647,7 @@ export class LoginComponent {
   private router = inject(Router);
 
   tabActiva = signal<'login' | 'register'>('login');
+  direccionTab = signal<'izquierda-derecha' | 'derecha-izquierda' | null>(null);
   modoRecuperacion = signal<boolean>(false);
   cargando = signal<boolean>(false);
   errorMensaje = signal<string | null>(null);
@@ -570,6 +683,14 @@ export class LoginComponent {
     this.casillaSeleccionada.set(codigo);
   }
 
+  cambiarTab(tab: 'login' | 'register'): void {
+    if (this.tabActiva() === tab) {
+      return;
+    }
+    this.direccionTab.set(tab === 'register' ? 'izquierda-derecha' : 'derecha-izquierda');
+    this.tabActiva.set(tab);
+  }
+
   get ocupadosDemo(): number {
     return [...this.demoSlots, ...this.demoSlotsB].filter((s) => s.ocupado).length;
   }
@@ -590,12 +711,12 @@ export class LoginComponent {
   registerForm = this.fb.group({
     nombre: ['', [Validators.required]],
     apellido: ['', [Validators.required]],
-    documento: ['', [Validators.required]],
-    telefono: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(10)]],
-    correo: ['', [Validators.required, Validators.email]],
+    documento: ['', [Validators.required], [this.documentoDisponibleValidator()]],
+    telefono: ['', [Validators.required, Validators.pattern(/^[0-9]{10}$/)]],
+    correo: ['', [Validators.required, Validators.email], [this.correoDisponibleValidator()]],
     password: ['', [Validators.required]],
     rol: ['usuario', [Validators.required]],
-    placasStr: ['']
+    placasStr: ['', [this.placasValidator()]]
   });
 
   recuperacionForm = this.fb.group({
@@ -604,6 +725,89 @@ export class LoginComponent {
     password: ['', [Validators.required, Validators.minLength(6)]],
     confirmar: ['', [Validators.required]]
   });
+
+  private correoDisponibleValidator(): AsyncValidatorFn {
+    return (control: AbstractControl): Observable<ValidationErrors | null> => {
+      const correo = String(control.value ?? '').trim();
+      if (!correo || control.hasError('email')) {
+        return of(null);
+      }
+      return timer(450).pipe(
+        switchMap(() => this.authService.verificarDisponibilidad(correo, '')),
+        map((res) => (res.correoDisponible ? null : { correoEnUso: true })),
+        catchError(() => of(null))
+      );
+    };
+  }
+
+  private documentoDisponibleValidator(): AsyncValidatorFn {
+    return (control: AbstractControl): Observable<ValidationErrors | null> => {
+      const documento = String(control.value ?? '').trim();
+      if (!documento) {
+        return of(null);
+      }
+      return timer(450).pipe(
+        switchMap(() => this.authService.verificarDisponibilidad('', documento)),
+        map((res) => (res.documentoDisponible ? null : { documentoEnUso: true })),
+        catchError(() => of(null))
+      );
+    };
+  }
+
+  private placasValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const valor = String(control.value ?? '').trim();
+      if (!valor) {
+        return null;
+      }
+      const placas = valor.split(',').map((placa) => placa.trim()).filter((placa) => placa.length > 0);
+      const invalida = placas.find((placa) => !this.placaValida(placa));
+      return invalida ? { placaInvalida: invalida } : null;
+    };
+  }
+
+  private placaValida(valor: string): boolean {
+    return /^[A-Z]{3}[\s_-]?[0-9]{3}$/i.test(valor.trim());
+  }
+
+  private normalizarNombre(valor: string): string {
+    return valor
+      .trim()
+      .toLocaleLowerCase('es')
+      .replace(/(^|[\s'-])(\p{L})/gu, (_, separador: string, letra: string) => separador + letra.toLocaleUpperCase('es'));
+  }
+
+  private normalizarPlaca(valor: string): string {
+    const limpia = valor.trim().toUpperCase();
+    const coincidencia = limpia.match(/^([A-Z]{3})[\s_-]?([0-9]{3})$/);
+    return coincidencia ? `${coincidencia[1]}-${coincidencia[2]}` : limpia;
+  }
+
+  normalizarCampo(campo: 'nombre' | 'apellido' | 'documento' | 'telefono' | 'placasStr'): void {
+    const control = this.registerForm.get(campo);
+    if (!control || control.value === null || control.value === undefined) {
+      return;
+    }
+
+    let valor = String(control.value);
+
+    if (campo === 'nombre' || campo === 'apellido') {
+      valor = this.normalizarNombre(valor);
+    } else if (campo === 'documento' || campo === 'telefono') {
+      valor = valor.trim();
+    } else if (campo === 'placasStr') {
+      valor = valor
+        .split(',')
+        .map((placa) => placa.trim())
+        .filter((placa) => placa.length > 0)
+        .map((placa) => this.normalizarPlaca(placa))
+        .join(', ');
+    }
+
+    control.setValue(valor, { emitEvent: false });
+    control.markAsTouched();
+    control.updateValueAndValidity();
+  }
 
   onSubmitLogin(): void {
     if (this.loginForm.invalid) {
@@ -632,23 +836,26 @@ export class LoginComponent {
   }
 
   onSubmitRegister(): void {
-    if (this.registerForm.invalid) {
-      this.errorMensaje.set('Por favor verifica los campos obligatorios (el teléfono debe tener 10 dígitos).');
+    if (this.registerForm.invalid || this.registerForm.pending) {
+      this.errorMensaje.set('Revisa los campos marcados. El teléfono debe tener 10 dígitos y las placas deben tener el formato ABC-123.');
       return;
     }
 
     this.cargando.set(true);
     this.errorMensaje.set(null);
+    this.exitoMensaje.set(null);
 
     const val = this.registerForm.value;
-    const placas = val.placasStr ? val.placasStr.split(',').map((p) => p.trim()).filter((p) => p.length > 0) : [];
+    const placas = val.placasStr
+      ? val.placasStr.split(',').map((p) => p.trim()).filter((p) => p.length > 0).map((p) => this.normalizarPlaca(p))
+      : [];
 
     const datos: any = {
-      nombre: val.nombre,
-      apellido: val.apellido,
-      documento: val.documento,
-      telefono: val.telefono,
-      correo: val.correo,
+      nombre: this.normalizarNombre(String(val.nombre ?? '')),
+      apellido: this.normalizarNombre(String(val.apellido ?? '')),
+      documento: String(val.documento ?? '').trim(),
+      telefono: String(val.telefono ?? '').trim(),
+      correo: String(val.correo ?? '').trim().toLowerCase(),
       password: val.password,
       rol: val.rol,
       placas: placas
@@ -658,12 +865,33 @@ export class LoginComponent {
       next: () => {
         this.cargando.set(false);
         this.exitoMensaje.set('¡Cuenta creada con éxito! Ahora puedes iniciar sesión.');
+        this.direccionTab.set(null);
         this.tabActiva.set('login');
         this.loginForm.patchValue({ correo: datos.correo, password: datos.password });
+        this.registerForm.reset({
+          nombre: '',
+          apellido: '',
+          documento: '',
+          telefono: '',
+          correo: '',
+          password: '',
+          rol: 'usuario',
+          placasStr: ''
+        });
       },
       error: (err) => {
         this.cargando.set(false);
-        this.errorMensaje.set(err.error?.message || 'Error al crear la cuenta.');
+        const mensaje = err.error?.message || 'Error al crear la cuenta.';
+        if (/ya existe un usuario registrado con ese correo/i.test(mensaje)) {
+          this.registerForm.controls.correo.setErrors({ correoEnUso: true });
+        }
+        if (/ya existe un usuario registrado con ese documento/i.test(mensaje)) {
+          this.registerForm.controls.documento.setErrors({ documentoEnUso: true });
+        }
+        if (/placa debe tener el formato/i.test(mensaje)) {
+          this.registerForm.controls.placasStr.setErrors({ placaInvalida: 'formato' });
+        }
+        this.errorMensaje.set(mensaje);
       }
     });
   }
@@ -671,6 +899,7 @@ export class LoginComponent {
   abrirRecuperacion(): void {
     this.errorMensaje.set(null);
     this.exitoMensaje.set(null);
+    this.direccionTab.set(null);
     this.recuperacionForm.reset({
       correo: this.loginForm.value.correo || '',
       documento: '',
@@ -683,6 +912,7 @@ export class LoginComponent {
   cerrarRecuperacion(): void {
     this.errorMensaje.set(null);
     this.exitoMensaje.set(null);
+    this.direccionTab.set(null);
     this.modoRecuperacion.set(false);
   }
 
@@ -710,6 +940,7 @@ export class LoginComponent {
       next: () => {
         this.cargando.set(false);
         this.modoRecuperacion.set(false);
+        this.direccionTab.set(null);
         this.tabActiva.set('login');
         this.loginForm.patchValue({ correo, password: '' });
         this.exitoMensaje.set('Contraseña actualizada correctamente. Ya puedes iniciar sesión.');
