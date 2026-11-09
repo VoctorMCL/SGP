@@ -163,3 +163,51 @@ Obtiene la información del usuario autenticado.
 ```json
 { "message": "Error al consultar the perfil" }
 ```
+
+## 4. Recuperar Contraseña
+
+Restablece la contraseña de un usuario verificando su correo y su documento de identidad.
+
+- **URL:** `POST /api/usuario/recuperar`
+- **Auth:** No requiere
+- **Content-Type:** `application/json`
+
+### Body
+
+```json
+{
+  "correo": "juan.perez@email.com",
+  "documento": "1234567890",
+  "password": "nuevaClave123"
+}
+```
+
+### Validaciones
+
+| Campo | Requerido | Validación |
+|---|---|---|
+| `correo` | Sí | Formato válido con `@` y `.` |
+| `documento` | Sí | Debe coincidir con el documento registrado para ese correo |
+| `password` | Sí | Texto de al menos 6 caracteres (nueva contraseña) |
+
+### Respuestas
+
+**200 OK**
+```json
+{ "message": "Contraseña actualizada correctamente" }
+```
+
+**400 Bad Request**
+```json
+{ "message": "Debe enviar correo, documento y la nueva contraseña" }
+{ "message": "El correo no tiene un formato valido" }
+{ "message": "La nueva contraseña debe tener al menos 6 caracteres" }
+{ "message": "El correo y el documento no coinciden con ningún usuario" }
+```
+
+**500 Internal Server Error**
+```json
+{ "message": "Error al actualizar la contraseña" }
+```
+
+> La verificación se hace con correo + documento. Si ambos coinciden, la contraseña se reemplaza inmediatamente; no se envía ningún correo.

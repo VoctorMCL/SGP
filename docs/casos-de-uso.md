@@ -34,6 +34,7 @@ Persona que necesita parquear su vehículo.
 |---|---|---|
 | **Registrarse** | Crear cuenta nueva con datos personales, teléfono, placas | `POST /api/usuario/registrar` |
 | **Iniciar sesión** | Autenticarse y obtener token JWT | `POST /api/usuario/login` |
+| **Recuperar contraseña** | Restablecer la contraseña verificando correo + documento | `POST /api/usuario/recuperar` |
 | **Ver perfil** | Consultar sus datos personales | `GET /api/usuario/perfil` |
 | **Ver organizaciones disponibles** | Ver las organizaciones a las que pertenece | `GET /api/organizacion` |
 | **Unirse a organización** | Unirse a un parqueadero usando el código de invitación | `POST /api/organizacion/unirse` |

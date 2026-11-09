@@ -73,6 +73,10 @@ export class AuthService {
     return this.http.post(`${environment.apiUrl}/usuario/registrar`, datos);
   }
 
+  recuperarPassword(datos: { correo: string; documento: string; password: string }): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${environment.apiUrl}/usuario/recuperar`, datos);
+  }
+
   getPerfil(): Observable<{ usuario: Usuario }> {
     return this.http.get<{ usuario: Usuario }>(`${environment.apiUrl}/usuario/perfil`);
   }

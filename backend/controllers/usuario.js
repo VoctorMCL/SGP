@@ -103,6 +103,46 @@ function loguearUsuario(req, resp) {
     )
 }
 
+function recuperarPassword(req, resp) {
+    let requestBody = req.body || {};
+    let correo = requestBody.correo;
+    let documento = requestBody.documento;
+    let password = requestBody.password;
+
+    if (!validacion.texto(correo) || !validacion.texto(documento) || !validacion.texto(password)) {
+        return resp.status(400).send({ "message": "Debe enviar correo, documento y la nueva contraseña" });
+    }
+
+    if (correo.indexOf('@') === -1 || correo.indexOf('.') === -1) {
+        return resp.status(400).send({ "message": "El correo no tiene un formato valido" });
+    }
+
+    if (password.trim().length < 6) {
+        return resp.status(400).send({ "message": "La nueva contraseña debe tener al menos 6 caracteres" });
+    }
+
+    Usuarios.findOne({ "correo": correo.toLowerCase() }).then(
+        (usuario) => {
+            if (!usuario || String(usuario.documento).trim() !== documento.trim()) {
+                return resp.status(400).send({ "message": "El correo y el documento no coinciden con ningún usuario" });
+            }
+
+            usuario.password = bcrypt.hashSync(password, 10);
+            usuario.save().then(
+                () => {
+                    resp.status(200).send({ "message": "Contraseña actualizada correctamente" });
+                },
+                err => {
+                    errorInterno(resp, "Error al actualizar la contraseña", err);
+                }
+            );
+        },
+        err => {
+            errorInterno(resp, "Error al validar los datos de recuperación", err);
+        }
+    );
+}
+
 function perfilUsuario(req, resp) {
     Usuarios.findById(req.usuario.id).then(
         (usuario) => {
@@ -119,4 +159,4 @@ function perfilUsuario(req, resp) {
     );
 }
 
-module.exports = { registrarUsuario, loguearUsuario, perfilUsuario };
+module.exports = { registrarUsuario, loguearUsuario, recuperarPassword, perfilUsuario };

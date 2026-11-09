@@ -4,6 +4,16 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angu
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
+type CasillaDemo = {
+  codigo: string;
+  ocupado: boolean;
+  tipo: string;
+  placa?: string;
+  conductor?: string;
+  ingreso?: string;
+  tiempo?: string;
+};
+
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -66,22 +76,24 @@ import { AuthService } from '../../core/services/auth.service';
                 <span class="tag tag-signal text-xs">En vivo</span>
               </div>
               <div class="p-5">
-                <div class="grid grid-cols-[1fr_auto_1fr] items-stretch gap-3">
+                <div class="grid grid-cols-[1fr_auto_1fr] items-stretch gap-3 xl:grid-cols-[7rem_auto_7rem_minmax(0,1fr)]">
                   <!-- Columna Bahías Izquierda (Zona A) -->
                   <div class="flex flex-col gap-2">
                     @for (slot of demoSlots; track slot.codigo) {
-                      <div
-                        class="relative flex h-11 items-center justify-between rounded-md border px-3 transition-colors"
-                        [class]="slot.ocupado
+                      <button
+                        type="button"
+                        (click)="seleccionarCasilla(slot.codigo)"
+                        class="relative flex h-11 cursor-pointer items-center justify-between rounded-md border px-2.5 transition-colors"
+                        [class]="(slot.ocupado
                           ? 'border-danger/35 bg-danger/[0.09] text-danger'
-                          : 'border-ok/30 bg-ok/[0.06] text-ok'"
+                          : 'border-ok/30 bg-ok/[0.06] text-ok')
+                          + (casillaSeleccionada() === slot.codigo
+                            ? ' ring-2 ring-signal ring-offset-1 ring-offset-[#080b11]'
+                            : ' hover:brightness-110')"
                       >
-                        <span class="mono text-xs font-bold tracking-wider">{{ slot.codigo }}</span>
-                        <span class="mono text-[0.68rem] font-medium flex items-center gap-1.5">
-                          <span class="h-1.5 w-1.5 rounded-full" [class]="slot.ocupado ? 'bg-danger' : 'bg-ok'"></span>
-                          {{ slot.ocupado ? 'Ocupado' : 'Libre' }}
-                        </span>
-                      </div>
+                        <span class="mono text-[0.72rem] font-bold tracking-wider">{{ slot.codigo }}</span>
+                        <span class="h-1.5 w-1.5 rounded-full" [class]="slot.ocupado ? 'bg-danger' : 'bg-ok'"></span>
+                      </button>
                     }
                   </div>
 
@@ -105,19 +117,81 @@ import { AuthService } from '../../core/services/auth.service';
                   <!-- Columna Bahías Derecha (Zona B) -->
                   <div class="flex flex-col gap-2">
                     @for (slot of demoSlotsB; track slot.codigo) {
-                      <div
-                        class="relative flex h-11 items-center justify-between rounded-md border px-3 transition-colors"
-                        [class]="slot.ocupado
+                      <button
+                        type="button"
+                        (click)="seleccionarCasilla(slot.codigo)"
+                        class="relative flex h-11 cursor-pointer items-center justify-between rounded-md border px-2.5 transition-colors"
+                        [class]="(slot.ocupado
                           ? 'border-danger/35 bg-danger/[0.09] text-danger'
-                          : 'border-ok/30 bg-ok/[0.06] text-ok'"
+                          : 'border-ok/30 bg-ok/[0.06] text-ok')
+                          + (casillaSeleccionada() === slot.codigo
+                            ? ' ring-2 ring-signal ring-offset-1 ring-offset-[#080b11]'
+                            : ' hover:brightness-110')"
                       >
-                        <span class="mono text-[0.68rem] font-medium flex items-center gap-1.5">
-                          <span class="h-1.5 w-1.5 rounded-full" [class]="slot.ocupado ? 'bg-danger' : 'bg-ok'"></span>
-                          {{ slot.ocupado ? 'Ocupado' : 'Libre' }}
-                        </span>
-                        <span class="mono text-xs font-bold tracking-wider">{{ slot.codigo }}</span>
-                      </div>
+                        <span class="h-1.5 w-1.5 rounded-full" [class]="slot.ocupado ? 'bg-danger' : 'bg-ok'"></span>
+                        <span class="mono text-[0.72rem] font-bold tracking-wider">{{ slot.codigo }}</span>
+                      </button>
                     }
+                  </div>
+
+                  <!-- Detalle de la casilla marcada -->
+                  <div
+                    class="col-span-3 flex flex-col justify-between rounded-md border p-3 xl:col-span-1"
+                    [class]="detalleCasilla.ocupado
+                      ? 'border-danger/35 bg-danger/[0.05]'
+                      : 'border-ok/30 bg-ok/[0.04]'"
+                  >
+                    <div>
+                      <div class="flex items-center justify-between gap-2">
+                        <span class="mono flex items-center gap-1.5 text-[0.52rem] uppercase tracking-[0.18em] text-mist">
+                          <span class="h-1.5 w-1.5 rounded-full" [class]="detalleCasilla.ocupado ? 'bg-danger' : 'bg-ok'"></span>
+                          Casilla marcada
+                        </span>
+                        <span class="tag text-[0.48rem]" [class]="detalleCasilla.ocupado ? 'tag-danger' : 'tag-ok'">
+                          {{ detalleCasilla.ocupado ? 'Ocupado' : 'Libre' }}
+                        </span>
+                      </div>
+
+                      <div class="mt-2 flex items-baseline justify-between gap-2">
+                        <span class="mono text-2xl font-bold tracking-tight text-chalk">{{ detalleCasilla.codigo }}</span>
+                        <span class="mono text-[0.55rem] uppercase tracking-wider text-mist/70">{{ detalleCasilla.tipo }}</span>
+                      </div>
+
+                      <div class="mt-2.5 space-y-1.5 border-t border-white/10 pt-2.5">
+                        @if (detalleCasilla.ocupado) {
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="mono text-[0.52rem] uppercase tracking-wider text-mist/70">Vehículo</span>
+                            <span class="mono text-[0.64rem] font-semibold text-chalk">{{ detalleCasilla.placa }}</span>
+                          </div>
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="mono text-[0.52rem] uppercase tracking-wider text-mist/70">Conductor</span>
+                            <span class="mono text-[0.62rem] text-chalk/90">{{ detalleCasilla.conductor }}</span>
+                          </div>
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="mono text-[0.52rem] uppercase tracking-wider text-mist/70">Ingreso</span>
+                            <span class="mono text-[0.62rem] text-chalk/90">{{ detalleCasilla.ingreso }}</span>
+                          </div>
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="mono text-[0.52rem] uppercase tracking-wider text-mist/70">Tiempo</span>
+                            <span class="mono text-[0.62rem] font-semibold text-danger">{{ detalleCasilla.tiempo }}</span>
+                          </div>
+                        } @else {
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="mono text-[0.52rem] uppercase tracking-wider text-mist/70">Estado</span>
+                            <span class="mono text-[0.62rem] font-semibold text-ok">Disponible</span>
+                          </div>
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="mono text-[0.52rem] uppercase tracking-wider text-mist/70">Vehículo</span>
+                            <span class="mono text-[0.62rem] text-mist">Sin asignar</span>
+                          </div>
+                        }
+                      </div>
+                    </div>
+
+                    <div class="mt-3 flex items-center gap-1.5 border-t border-white/10 pt-2.5">
+                      <span class="live-dot"></span>
+                      <span class="mono text-[0.5rem] uppercase tracking-[0.16em] text-mist/70">Actualizado en vivo</span>
+                    </div>
                   </div>
                 </div>
 
@@ -145,37 +219,47 @@ import { AuthService } from '../../core/services/auth.service';
 
         <div class="relative z-10 w-full max-w-[28rem]">
           <div class="mb-8">
-            <h2 class="text-3xl font-semibold tracking-tight text-chalk">Bienvenido a SGP</h2>
-            <p class="mt-2 text-sm sm:text-base text-mist">Ingresa tus credenciales para acceder a la plataforma.</p>
+            <h2 class="text-3xl font-semibold tracking-tight text-chalk">
+              {{ modoRecuperacion() ? 'Recuperar contraseña' : 'Bienvenido a SGP' }}
+            </h2>
+            <p class="mt-2 text-sm sm:text-base text-mist">
+              @if (modoRecuperacion()) {
+                Verifica tu identidad con tu correo y tu documento de identidad.
+              } @else {
+                Ingresa tus credenciales para acceder a la plataforma.
+              }
+            </p>
           </div>
 
           <!-- Tabs -->
-          <div class="mb-7 flex border-b border-edge">
-            <button
-              type="button"
-              (click)="tabActiva.set('login')"
-              class="relative px-2 pb-3.5 pr-8 text-sm sm:text-base font-semibold transition-colors"
-              [class.text-chalk]="tabActiva() === 'login'"
-              [class.text-mist]="tabActiva() !== 'login'"
-            >
-              Iniciar sesión
-              @if (tabActiva() === 'login') {
-                <span class="absolute bottom-[-1px] left-0 h-[2px] w-12 bg-signal"></span>
-              }
-            </button>
-            <button
-              type="button"
-              (click)="tabActiva.set('register')"
-              class="relative px-2 pb-3.5 text-sm sm:text-base font-semibold transition-colors"
-              [class.text-chalk]="tabActiva() === 'register'"
-              [class.text-mist]="tabActiva() !== 'register'"
-            >
-              Crear cuenta
-              @if (tabActiva() === 'register') {
-                <span class="absolute bottom-[-1px] left-0 h-[2px] w-12 bg-signal"></span>
-              }
-            </button>
-          </div>
+          @if (!modoRecuperacion()) {
+            <div class="mb-7 flex border-b border-edge">
+              <button
+                type="button"
+                (click)="tabActiva.set('login')"
+                class="relative px-2 pb-3.5 pr-8 text-sm sm:text-base font-semibold transition-colors"
+                [class.text-chalk]="tabActiva() === 'login'"
+                [class.text-mist]="tabActiva() !== 'login'"
+              >
+                Iniciar sesión
+                @if (tabActiva() === 'login') {
+                  <span class="absolute bottom-[-1px] left-0 h-[2px] w-12 bg-signal"></span>
+                }
+              </button>
+              <button
+                type="button"
+                (click)="tabActiva.set('register')"
+                class="relative px-2 pb-3.5 text-sm sm:text-base font-semibold transition-colors"
+                [class.text-chalk]="tabActiva() === 'register'"
+                [class.text-mist]="tabActiva() !== 'register'"
+              >
+                Crear cuenta
+                @if (tabActiva() === 'register') {
+                  <span class="absolute bottom-[-1px] left-0 h-[2px] w-12 bg-signal"></span>
+                }
+              </button>
+            </div>
+          }
 
           @if (errorMensaje()) {
             <div class="mb-5 flex items-start gap-3 rounded-md border border-danger/30 bg-danger/[0.07] p-3.5 text-xs sm:text-sm leading-relaxed text-danger">
@@ -196,7 +280,102 @@ import { AuthService } from '../../core/services/auth.service';
             </div>
           }
 
-          @if (tabActiva() === 'login') {
+          @if (modoRecuperacion()) {
+            <form [formGroup]="recuperacionForm" (ngSubmit)="onSubmitRecuperacion()" class="space-y-4">
+              <div>
+                <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block" for="rec-correo">Correo electrónico</label>
+                <div class="relative">
+                  <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-mist/60">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <rect x="3" y="5" width="18" height="14" rx="2" stroke-width="1.8"></rect>
+                      <path stroke-width="1.8" d="m3.5 7 8.5 6 8.5-6"></path>
+                    </svg>
+                  </span>
+                  <input id="rec-correo" type="email" formControlName="correo" placeholder="nombre@empresa.com" class="field text-sm sm:text-base h-12 pl-10 pr-4" />
+                </div>
+              </div>
+
+              <div>
+                <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block" for="rec-documento">Documento / Cédula</label>
+                <div class="relative">
+                  <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-mist/60">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <rect x="3" y="5" width="18" height="14" rx="2" stroke-width="1.8"></rect>
+                      <circle cx="8.5" cy="11" r="2" stroke-width="1.8"></circle>
+                      <path stroke-linecap="round" stroke-width="1.8" d="M5.5 16c.6-1.5 1.7-2.2 3-2.2s2.4.7 3 2.2M14 9.5h4M14 13h4"></path>
+                    </svg>
+                  </span>
+                  <input id="rec-documento" type="text" formControlName="documento" placeholder="10001000" class="field field-mono text-sm sm:text-base h-12 pl-10 pr-4" />
+                </div>
+                <p class="mt-1.5 text-[0.7rem] leading-relaxed text-mist/70">Usamos tu documento como verificación de identidad.</p>
+              </div>
+
+              <div>
+                <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block" for="rec-pass">Nueva contraseña</label>
+                <div class="relative">
+                  <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-mist/60">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <rect x="4" y="10" width="16" height="10" rx="2" stroke-width="1.8"></rect>
+                      <path stroke-width="1.8" d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+                    </svg>
+                  </span>
+                  <input
+                    id="rec-pass"
+                    [type]="verPassword() ? 'text' : 'password'"
+                    formControlName="password"
+                    placeholder="Mínimo 6 caracteres"
+                    class="field text-sm sm:text-base h-12 pl-10 pr-12"
+                  />
+                  <button
+                    type="button"
+                    (click)="verPassword.set(!verPassword())"
+                    class="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-mist/70 transition-colors hover:text-chalk"
+                    [attr.aria-label]="verPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                  >
+                    @if (verPassword()) {
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M3 3l18 18M10.6 10.7a2 2 0 0 0 2.8 2.8M9.9 5.2A10.8 10.8 0 0 1 12 5c5 0 9 4.5 9 7a11 11 0 0 1-2.4 3.4M6.1 6.6C3.9 8 2.6 10.2 3 12c.7 2.5 4.3 5 9 5 1 0 2-.2 2.9-.5"></path>
+                      </svg>
+                    } @else {
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-width="1.7" d="M3 12c.7-2.5 4.3-5 9-5s8.3 2.5 9 5c-.7 2.5-4.3 5-9 5s-8.3-2.5-9-5Z"></path>
+                        <circle cx="12" cy="12" r="2.4" stroke-width="1.7"></circle>
+                      </svg>
+                    }
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block" for="rec-pass2">Confirmar contraseña</label>
+                <input
+                  id="rec-pass2"
+                  [type]="verPassword() ? 'text' : 'password'"
+                  formControlName="confirmar"
+                  placeholder="Repite la nueva contraseña"
+                  class="field text-sm sm:text-base h-12"
+                />
+              </div>
+
+              <button type="submit" [disabled]="cargando()" class="btn btn-signal mt-2 h-12 w-full text-sm sm:text-base font-bold">
+                @if (cargando()) {
+                  <span class="h-4 w-4 animate-spin rounded-full border-2 border-void/25 border-t-void"></span>
+                  <span>Restableciendo…</span>
+                } @else {
+                  <span>Restablecer contraseña</span>
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-5-5 5 5-5 5"></path>
+                  </svg>
+                }
+              </button>
+
+              <button type="button" (click)="cerrarRecuperacion()" class="btn btn-ghost h-11 w-full text-sm font-semibold">
+                Volver a iniciar sesión
+              </button>
+            </form>
+          }
+
+          @if (!modoRecuperacion() && tabActiva() === 'login') {
             <form [formGroup]="loginForm" (ngSubmit)="onSubmitLogin()" class="space-y-5">
               <div>
                 <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block" for="login-correo">Correo electrónico</label>
@@ -247,6 +426,16 @@ import { AuthService } from '../../core/services/auth.service';
                 </div>
               </div>
 
+              <div class="flex justify-end">
+                <button
+                  type="button"
+                  (click)="abrirRecuperacion()"
+                  class="text-xs font-medium text-mist transition-colors hover:text-chalk"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+
               <button type="submit" [disabled]="cargando()" class="btn btn-signal mt-2 h-12 w-full text-sm sm:text-base font-bold">
                 @if (cargando()) {
                   <span class="h-4 w-4 animate-spin rounded-full border-2 border-void/25 border-t-void"></span>
@@ -261,7 +450,7 @@ import { AuthService } from '../../core/services/auth.service';
             </form>
           }
 
-          @if (tabActiva() === 'register') {
+          @if (!modoRecuperacion() && tabActiva() === 'register') {
             <form [formGroup]="registerForm" (ngSubmit)="onSubmitRegister()" class="space-y-3.5">
               <div class="grid grid-cols-2 gap-3">
                 <div>
@@ -324,15 +513,17 @@ import { AuthService } from '../../core/services/auth.service';
             </form>
           }
 
-          <div class="mt-8 flex items-center justify-between border-t border-edge pt-5">
-            <a routerLink="/unirse" class="group inline-flex items-center gap-2 text-sm font-medium text-mist transition-colors hover:text-chalk">
-              <svg class="h-4 w-4 text-signal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 7a2 2 0 0 1 2 2m4 0a6 6 0 0 1-7.7 5.7L11 17H9v2H7v2H4a1 1 0 0 1-1-1v-2.6a1 1 0 0 1 .3-.7l6-6A6 6 0 1 1 21 9Z"></path>
-              </svg>
-              Tengo un código de invitación
-              <span class="transition-transform group-hover:translate-x-0.5">→</span>
-            </a>
-          </div>
+          @if (!modoRecuperacion()) {
+            <div class="mt-8 flex items-center justify-between border-t border-edge pt-5">
+              <a routerLink="/unirse" class="group inline-flex items-center gap-2 text-sm font-medium text-mist transition-colors hover:text-chalk">
+                <svg class="h-4 w-4 text-signal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 7a2 2 0 0 1 2 2m4 0a6 6 0 0 1-7.7 5.7L11 17H9v2H7v2H4a1 1 0 0 1-1-1v-2.6a1 1 0 0 1 .3-.7l6-6A6 6 0 1 1 21 9Z"></path>
+                </svg>
+                Tengo un código de invitación
+                <span class="transition-transform group-hover:translate-x-0.5">→</span>
+              </a>
+            </div>
+          }
         </div>
       </section>
     </div>
@@ -344,28 +535,40 @@ export class LoginComponent {
   private router = inject(Router);
 
   tabActiva = signal<'login' | 'register'>('login');
+  modoRecuperacion = signal<boolean>(false);
   cargando = signal<boolean>(false);
   errorMensaje = signal<string | null>(null);
   exitoMensaje = signal<string | null>(null);
   verPassword = signal<boolean>(false);
 
-  demoSlots = [
-    { codigo: 'A-01', ocupado: false },
-    { codigo: 'A-02', ocupado: true },
-    { codigo: 'A-03', ocupado: false },
-    { codigo: 'A-04', ocupado: false },
-    { codigo: 'A-05', ocupado: true },
-    { codigo: 'A-06', ocupado: false }
+  casillaSeleccionada = signal<string>('A-02');
+
+  demoSlots: CasillaDemo[] = [
+    { codigo: 'A-01', ocupado: false, tipo: 'Standard' },
+    { codigo: 'A-02', ocupado: true, tipo: 'Standard', placa: 'KJL-482', conductor: 'María G.', ingreso: '14:32', tiempo: '1 h 24 min' },
+    { codigo: 'A-03', ocupado: false, tipo: 'Eléctrico' },
+    { codigo: 'A-04', ocupado: false, tipo: 'Standard' },
+    { codigo: 'A-05', ocupado: true, tipo: 'Standard', placa: 'MNO-921', conductor: 'Carlos R.', ingreso: '13:05', tiempo: '2 h 51 min' },
+    { codigo: 'A-06', ocupado: false, tipo: 'Discapacitados' }
   ];
 
-  demoSlotsB = [
-    { codigo: 'B-01', ocupado: true },
-    { codigo: 'B-02', ocupado: false },
-    { codigo: 'B-03', ocupado: false },
-    { codigo: 'B-04', ocupado: false },
-    { codigo: 'B-05', ocupado: true },
-    { codigo: 'B-06', ocupado: false }
+  demoSlotsB: CasillaDemo[] = [
+    { codigo: 'B-01', ocupado: true, tipo: 'Standard', placa: 'PQR-337', conductor: 'Ana L.', ingreso: '15:10', tiempo: '46 min' },
+    { codigo: 'B-02', ocupado: false, tipo: 'Standard' },
+    { codigo: 'B-03', ocupado: false, tipo: 'Eléctrico' },
+    { codigo: 'B-04', ocupado: false, tipo: 'Standard' },
+    { codigo: 'B-05', ocupado: true, tipo: 'Standard', placa: 'STU-604', conductor: 'Diego M.', ingreso: '12:48', tiempo: '3 h 08 min' },
+    { codigo: 'B-06', ocupado: false, tipo: 'Standard' }
   ];
+
+  get detalleCasilla(): CasillaDemo {
+    const slots = [...this.demoSlots, ...this.demoSlotsB];
+    return slots.find((slot) => slot.codigo === this.casillaSeleccionada()) ?? slots[0];
+  }
+
+  seleccionarCasilla(codigo: string): void {
+    this.casillaSeleccionada.set(codigo);
+  }
 
   get ocupadosDemo(): number {
     return [...this.demoSlots, ...this.demoSlotsB].filter((s) => s.ocupado).length;
@@ -393,6 +596,13 @@ export class LoginComponent {
     password: ['', [Validators.required]],
     rol: ['usuario', [Validators.required]],
     placasStr: ['']
+  });
+
+  recuperacionForm = this.fb.group({
+    correo: ['', [Validators.required, Validators.email]],
+    documento: ['', [Validators.required]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
+    confirmar: ['', [Validators.required]]
   });
 
   onSubmitLogin(): void {
@@ -454,6 +664,60 @@ export class LoginComponent {
       error: (err) => {
         this.cargando.set(false);
         this.errorMensaje.set(err.error?.message || 'Error al crear la cuenta.');
+      }
+    });
+  }
+
+  abrirRecuperacion(): void {
+    this.errorMensaje.set(null);
+    this.exitoMensaje.set(null);
+    this.recuperacionForm.reset({
+      correo: this.loginForm.value.correo || '',
+      documento: '',
+      password: '',
+      confirmar: ''
+    });
+    this.modoRecuperacion.set(true);
+  }
+
+  cerrarRecuperacion(): void {
+    this.errorMensaje.set(null);
+    this.exitoMensaje.set(null);
+    this.modoRecuperacion.set(false);
+  }
+
+  onSubmitRecuperacion(): void {
+    if (this.recuperacionForm.invalid) {
+      this.errorMensaje.set('Completa todos los campos. La nueva contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+
+    const correo = this.recuperacionForm.value.correo!;
+    const documento = this.recuperacionForm.value.documento!;
+    const password = this.recuperacionForm.value.password!;
+    const confirmar = this.recuperacionForm.value.confirmar!;
+
+    if (password !== confirmar) {
+      this.errorMensaje.set('Las contraseñas no coinciden.');
+      return;
+    }
+
+    this.cargando.set(true);
+    this.errorMensaje.set(null);
+    this.exitoMensaje.set(null);
+
+    this.authService.recuperarPassword({ correo, documento, password }).subscribe({
+      next: () => {
+        this.cargando.set(false);
+        this.modoRecuperacion.set(false);
+        this.tabActiva.set('login');
+        this.loginForm.patchValue({ correo, password: '' });
+        this.exitoMensaje.set('Contraseña actualizada correctamente. Ya puedes iniciar sesión.');
+        this.recuperacionForm.reset();
+      },
+      error: (err) => {
+        this.cargando.set(false);
+        this.errorMensaje.set(err.error?.message || 'No se pudo restablecer la contraseña.');
       }
     });
   }
