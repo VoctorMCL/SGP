@@ -9,47 +9,38 @@ import { AuthService } from '../../core/services/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
   template: `
-    <div class="relative min-h-screen overflow-hidden lg:grid lg:grid-cols-[1.06fr_0.94fr]">
+    <div class="relative min-h-screen overflow-hidden lg:grid lg:grid-cols-[1.08fr_0.92fr]">
       <!-- ── Panel editorial ───────────────────────────────────── -->
-      <section class="relative flex flex-col justify-between overflow-hidden border-b border-edge px-5 py-8 sm:px-10 lg:border-b-0 lg:border-r lg:px-14 lg:py-12">
+      <section class="relative flex flex-col justify-between overflow-hidden border-b border-edge px-6 py-10 sm:px-12 lg:border-b-0 lg:border-r lg:px-16 lg:py-14">
         <div class="pointer-events-none absolute inset-0">
-          <div class="absolute -left-40 -top-40 h-[34rem] w-[34rem] rounded-full bg-flow/[0.13] blur-[110px]"></div>
-          <div class="absolute -bottom-52 right-0 h-[30rem] w-[30rem] rounded-full bg-signal/[0.06] blur-[120px]"></div>
-          <div class="absolute inset-0 line-grid opacity-[0.55] [mask-image:radial-gradient(70%_60%_at_35%_35%,#000_20%,transparent_100%)]"></div>
-          <div class="absolute right-10 top-9 hidden font-mono text-[15rem] font-bold leading-none text-white/[0.022] xl:block">SGP</div>
+          <div class="absolute -left-40 -top-40 h-[36rem] w-[36rem] rounded-full bg-flow/[0.13] blur-[110px]"></div>
+          <div class="absolute -bottom-52 right-0 h-[32rem] w-[32rem] rounded-full bg-signal/[0.06] blur-[120px]"></div>
+          <div class="absolute inset-0 line-grid opacity-[0.4] [mask-image:radial-gradient(70%_60%_at_35%_35%,#000_20%,transparent_100%)]"></div>
           <div class="absolute left-0 top-0 h-1 w-2/3 bg-gradient-to-r from-signal via-signal/40 to-transparent"></div>
         </div>
 
         <div class="relative z-10">
           <!-- Marca -->
-          <div class="flex items-start justify-between gap-6">
-            <div class="flex items-center gap-3.5">
-              <div class="notch-sm relative grid h-12 w-12 place-items-center bg-signal text-void shadow-[0_0_40px_-8px_rgba(216,255,62,0.7)]">
-                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square">
-                  <path d="M7.5 18V6h5.2a3.6 3.6 0 1 1 0 7.2H8.4" />
-                  <path d="M7.5 13.2h5.2" />
-                </svg>
-                <span class="absolute -bottom-px -right-px h-2 w-2 bg-flow"></span>
-              </div>
-              <div>
-                <div class="flex items-baseline gap-2">
-                  <span class="text-3xl font-bold tracking-[-0.05em] text-chalk">SGP</span>
-                  <span class="mono text-[0.58rem] tracking-[0.22em] text-signal">V1.0</span>
-                </div>
-                <p class="mono mt-1 text-[0.56rem] uppercase tracking-[0.22em] text-mist">Sistema de Gestión de Parqueo</p>
-              </div>
+          <div class="flex items-center gap-4">
+            <div class="notch-sm relative grid h-14 w-14 place-items-center bg-signal text-void shadow-[0_0_40px_-8px_rgba(216,255,62,0.7)]">
+              <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square">
+                <path d="M7.5 18V6h5.2a3.6 3.6 0 1 1 0 7.2H8.4" />
+                <path d="M7.5 13.2h5.2" />
+              </svg>
+              <span class="absolute -bottom-px -right-px h-2.5 w-2.5 bg-flow"></span>
             </div>
-
-            <span class="hidden items-center gap-2 rounded-full border border-edge bg-white/[0.025] px-3 py-1.5 text-[0.6rem] font-medium text-mist sm:inline-flex">
-              <span class="live-dot"></span>
-              Sistema operativo
-            </span>
+            <div>
+              <div class="flex items-baseline gap-2.5">
+                <span class="text-3xl sm:text-4xl font-bold tracking-tight text-chalk">SGP</span>
+                <span class="mono text-xs font-semibold tracking-widest text-signal">V1.0</span>
+              </div>
+              <p class="mono mt-1 text-xs uppercase tracking-widest text-mist">Sistema de Gestión de Parqueo</p>
+            </div>
           </div>
 
           <!-- Titular -->
           <div class="mt-12 max-w-xl lg:mt-16">
-            <span class="kicker rise">Movilidad / Tiempo real</span>
-            <h1 class="rise-2 mt-5 text-[2.6rem] font-semibold leading-[0.98] tracking-[-0.045em] text-chalk sm:text-6xl xl:text-[4.15rem]">
+            <h1 class="text-4xl font-bold leading-[1.02] tracking-tight text-chalk sm:text-5xl xl:text-[4.2rem]">
               Cada espacio,<br />
               <span class="relative inline-block text-signal">
                 bajo control.
@@ -58,176 +49,137 @@ import { AuthService } from '../../core/services/auth.service';
                 </svg>
               </span>
             </h1>
-            <p class="rise-3 mt-7 max-w-md text-sm leading-relaxed text-mist">
+            <p class="mt-6 max-w-lg text-base sm:text-lg leading-relaxed text-mist">
               Disponibilidad en vivo, reservas y planos interactivos para conjuntos, empresas y centros comerciales.
               Una sola consola para toda tu operación.
             </p>
           </div>
 
-          <!-- Previsualización en vivo -->
-          <div class="rise-4 mt-9 max-w-lg">
+          <!-- Previsualización en vivo (Diseño vertical) -->
+          <div class="mt-10 max-w-xl">
             <div class="panel notch overflow-hidden">
-              <div class="flex items-center justify-between border-b border-edge px-4 py-3">
+              <div class="flex items-center justify-between border-b border-edge px-5 py-4">
                 <div class="flex items-center gap-2.5">
                   <span class="live-dot"></span>
-                  <span class="mono text-[0.58rem] uppercase tracking-[0.18em] text-chalk">Sede Norte · Nivel 2</span>
+                  <span class="mono text-xs sm:text-sm font-semibold uppercase tracking-wider text-chalk">Mayorca Etapa II · Nivel 2</span>
                 </div>
-                <span class="tag tag-signal">En vivo</span>
+                <span class="tag tag-signal text-xs">En vivo</span>
               </div>
-              <div class="p-4">
-                <div class="grid grid-cols-6 gap-1.5">
-                  @for (slot of demoSlots; track $index) {
-                    <div
-                      class="relative flex h-9 flex-col items-center justify-center rounded-[3px] border text-[0.55rem] font-semibold transition-colors"
-                      [class]="slot.ocupado
-                        ? 'border-danger/35 bg-danger/[0.09] text-danger/90'
-                        : 'border-ok/30 bg-ok/[0.055] text-ok/90'"
-                    >
-                      <span class="mono leading-none">{{ slot.codigo }}</span>
-                      <span class="mt-0.5 h-0.5 w-2.5 rounded-full" [class]="slot.ocupado ? 'bg-danger/70' : 'bg-ok/70'"></span>
-                    </div>
-                  }
-                </div>
-                <div class="my-2.5 flex items-center gap-2">
-                  <span class="mono text-[0.5rem] uppercase tracking-[0.16em] text-mist/70">Entrada</span>
-                  <div class="relative h-px flex-1 border-t border-dashed border-white/20">
-                    <span class="absolute left-0 top-1/2 h-1 w-16 -translate-y-1/2 bg-gradient-to-r from-signal/70 to-transparent"></span>
+              <div class="p-5">
+                <div class="grid grid-cols-[1fr_auto_1fr] items-stretch gap-3">
+                  <!-- Columna Bahías Izquierda (Zona A) -->
+                  <div class="flex flex-col gap-2">
+                    @for (slot of demoSlots; track slot.codigo) {
+                      <div
+                        class="relative flex h-11 items-center justify-between rounded-md border px-3 transition-colors"
+                        [class]="slot.ocupado
+                          ? 'border-danger/35 bg-danger/[0.09] text-danger'
+                          : 'border-ok/30 bg-ok/[0.06] text-ok'"
+                      >
+                        <span class="mono text-xs font-bold tracking-wider">{{ slot.codigo }}</span>
+                        <span class="mono text-[0.68rem] font-medium flex items-center gap-1.5">
+                          <span class="h-1.5 w-1.5 rounded-full" [class]="slot.ocupado ? 'bg-danger' : 'bg-ok'"></span>
+                          {{ slot.ocupado ? 'Ocupado' : 'Libre' }}
+                        </span>
+                      </div>
+                    }
                   </div>
-                  <span class="mono text-[0.5rem] uppercase tracking-[0.16em] text-mist/70">Salida</span>
-                </div>
-                <div class="grid grid-cols-6 gap-1.5">
-                  @for (slot of demoSlotsB; track $index) {
-                    <div
-                      class="flex h-9 items-center justify-center rounded-[3px] border text-[0.55rem] font-semibold"
-                      [class]="slot.ocupado
-                        ? 'border-danger/35 bg-danger/[0.09] text-danger/90'
-                        : 'border-ok/30 bg-ok/[0.055] text-ok/90'"
-                    >
-                      <span class="mono leading-none">{{ slot.codigo }}</span>
+
+                  <!-- Vía de circulación vertical central -->
+                  <div class="flex flex-col items-center justify-between py-2 px-3 border-x border-dashed border-white/20 bg-white/[0.015] rounded">
+                    <div class="flex flex-col items-center gap-1 text-center">
+                      <span class="mono text-[0.62rem] font-bold uppercase tracking-widest text-signal">▲ ENTRADA</span>
+                      <span class="mono text-xs text-mist/60">↓</span>
                     </div>
-                  }
-                </div>
-                <div class="mt-3.5 flex items-center justify-between border-t border-edge pt-3">
-                  <div class="flex items-center gap-4 text-[0.6rem] text-mist">
-                    <span class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-ok"></span>{{ libresDemo }} libres</span>
-                    <span class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-danger"></span>{{ ocupadosDemo }} ocupados</span>
+                    <div class="flex flex-col items-center gap-4 py-4 text-mist/35">
+                      <span class="mono text-xs">↓</span>
+                      <span class="mono text-xs">↓</span>
+                      <span class="mono text-xs">↓</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-1 text-center">
+                      <span class="mono text-xs text-mist/60">↓</span>
+                      <span class="mono text-[0.62rem] font-bold uppercase tracking-widest text-mist/80">▼ SALIDA</span>
+                    </div>
                   </div>
-                  <span class="mono text-[0.55rem] text-signal">{{ ocupacionDemo }}% ocupación</span>
+
+                  <!-- Columna Bahías Derecha (Zona B) -->
+                  <div class="flex flex-col gap-2">
+                    @for (slot of demoSlotsB; track slot.codigo) {
+                      <div
+                        class="relative flex h-11 items-center justify-between rounded-md border px-3 transition-colors"
+                        [class]="slot.ocupado
+                          ? 'border-danger/35 bg-danger/[0.09] text-danger'
+                          : 'border-ok/30 bg-ok/[0.06] text-ok'"
+                      >
+                        <span class="mono text-[0.68rem] font-medium flex items-center gap-1.5">
+                          <span class="h-1.5 w-1.5 rounded-full" [class]="slot.ocupado ? 'bg-danger' : 'bg-ok'"></span>
+                          {{ slot.ocupado ? 'Ocupado' : 'Libre' }}
+                        </span>
+                        <span class="mono text-xs font-bold tracking-wider">{{ slot.codigo }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Resumen inferior -->
+                <div class="mt-4 flex items-center justify-between border-t border-edge pt-3 text-xs sm:text-sm">
+                  <div class="flex items-center gap-5 text-mist">
+                    <span class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-ok"></span><strong class="text-chalk font-semibold">{{ libresDemo }}</strong> libres</span>
+                    <span class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-danger"></span><strong class="text-chalk font-semibold">{{ ocupadosDemo }}</strong> ocupados</span>
+                  </div>
+                  <span class="mono font-semibold text-signal">{{ ocupacionDemo }}% ocupación</span>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- Accesos demo + créditos -->
-        <div class="relative z-10 mt-10">
-          <div class="mb-2.5 flex items-center gap-2">
-            <span class="mono text-[0.55rem] uppercase tracking-[0.2em] text-mist">Acceso rápido de prueba</span>
-            <span class="h-px flex-1 bg-edge"></span>
-          </div>
-          <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <button
-              type="button"
-              (click)="autocompletar('admin@sgp.com', '123456')"
-              class="group flex items-center justify-between rounded-md border border-edge bg-white/[0.02] px-3 py-2.5 text-left transition-colors hover:border-signal/35 hover:bg-signal/[0.035]"
-            >
-              <span>
-                <span class="mono block text-[0.5rem] uppercase tracking-[0.16em] text-signal">Administrador</span>
-                <span class="mt-0.5 block text-[0.68rem] text-chalk">admin&#64;sgp.com</span>
-              </span>
-              <svg class="h-3.5 w-3.5 text-mist transition-transform group-hover:translate-x-0.5 group-hover:text-signal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-5-5 5 5-5 5" />
-              </svg>
-            </button>
-
-            <button
-              type="button"
-              (click)="autocompletar('guardia@sgp.com', '123456')"
-              class="group flex items-center justify-between rounded-md border border-edge bg-white/[0.02] px-3 py-2.5 text-left transition-colors hover:border-ok/35 hover:bg-ok/[0.03]"
-            >
-              <span>
-                <span class="mono block text-[0.5rem] uppercase tracking-[0.16em] text-ok">Guardia</span>
-                <span class="mt-0.5 block text-[0.68rem] text-chalk">guardia&#64;sgp.com</span>
-              </span>
-              <svg class="h-3.5 w-3.5 text-mist transition-transform group-hover:translate-x-0.5 group-hover:text-ok" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-5-5 5 5-5 5" />
-              </svg>
-            </button>
-
-            <button
-              type="button"
-              (click)="autocompletar('conductor@sgp.com', '123456')"
-              class="group flex items-center justify-between rounded-md border border-edge bg-white/[0.02] px-3 py-2.5 text-left transition-colors hover:border-flow/45 hover:bg-flow/[0.04]"
-            >
-              <span>
-                <span class="mono block text-[0.5rem] uppercase tracking-[0.16em] text-flow">Conductor</span>
-                <span class="mt-0.5 block text-[0.68rem] text-chalk">conductor&#64;sgp.com</span>
-              </span>
-              <svg class="h-3.5 w-3.5 text-mist transition-transform group-hover:translate-x-0.5 group-hover:text-flow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-5-5 5 5-5 5" />
-              </svg>
-            </button>
-          </div>
-          <div class="mono mt-5 flex items-center justify-between text-[0.52rem] uppercase tracking-[0.14em] text-mist/60">
-            <span>Unilasallista · Desarrollo Web</span>
-            <span class="hidden sm:inline">Jaraba · Córdoba</span>
           </div>
         </div>
       </section>
 
       <!-- ── Panel de acceso ───────────────────────────────────── -->
-      <section class="relative flex min-h-[38rem] items-center justify-center px-5 py-10 sm:px-10 lg:min-h-0 lg:px-14">
+      <section class="relative flex min-h-[38rem] items-center justify-center px-6 py-12 sm:px-12 lg:min-h-0 lg:px-16">
         <div class="pointer-events-none absolute inset-0">
           <div class="absolute inset-0 bg-[#080b11]"></div>
-          <div class="absolute inset-0 line-grid opacity-25"></div>
+          <div class="absolute inset-0 line-grid opacity-20"></div>
           <div class="absolute left-0 top-0 h-full w-px bg-gradient-to-b from-transparent via-signal/20 to-transparent"></div>
-          <span class="absolute left-6 top-6 h-5 w-5 border-l border-t border-edge-strong"></span>
-          <span class="absolute bottom-6 right-6 h-5 w-5 border-b border-r border-edge-strong"></span>
         </div>
 
-        <div class="relative z-10 w-full max-w-[26rem]">
-          <div class="mb-7 flex items-end justify-between">
-            <div>
-              <span class="kicker">Acceso seguro</span>
-              <h2 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-chalk">Bienvenido de nuevo</h2>
-              <p class="mt-1 text-xs text-mist">Ingresa tus credenciales para abrir la consola.</p>
-            </div>
-            <span class="mono hidden text-right text-[0.52rem] uppercase leading-relaxed tracking-[0.14em] text-mist/60 sm:block">
-              SESIÓN<br />ENCRIPTADA
-            </span>
+        <div class="relative z-10 w-full max-w-[28rem]">
+          <div class="mb-8">
+            <h2 class="text-3xl font-semibold tracking-tight text-chalk">Bienvenido a SGP</h2>
+            <p class="mt-2 text-sm sm:text-base text-mist">Ingresa tus credenciales para acceder a la plataforma.</p>
           </div>
 
           <!-- Tabs -->
-          <div class="mb-6 flex border-b border-edge">
+          <div class="mb-7 flex border-b border-edge">
             <button
               type="button"
               (click)="tabActiva.set('login')"
-              class="relative px-1 pb-3 pr-6 text-[0.7rem] font-semibold transition-colors"
+              class="relative px-2 pb-3.5 pr-8 text-sm sm:text-base font-semibold transition-colors"
               [class.text-chalk]="tabActiva() === 'login'"
               [class.text-mist]="tabActiva() !== 'login'"
             >
               Iniciar sesión
               @if (tabActiva() === 'login') {
-                <span class="absolute bottom-[-1px] left-0 h-[2px] w-9 bg-signal"></span>
+                <span class="absolute bottom-[-1px] left-0 h-[2px] w-12 bg-signal"></span>
               }
             </button>
             <button
               type="button"
               (click)="tabActiva.set('register')"
-              class="relative px-1 pb-3 text-[0.7rem] font-semibold transition-colors"
+              class="relative px-2 pb-3.5 text-sm sm:text-base font-semibold transition-colors"
               [class.text-chalk]="tabActiva() === 'register'"
               [class.text-mist]="tabActiva() !== 'register'"
             >
               Crear cuenta
               @if (tabActiva() === 'register') {
-                <span class="absolute bottom-[-1px] left-0 h-[2px] w-9 bg-signal"></span>
+                <span class="absolute bottom-[-1px] left-0 h-[2px] w-12 bg-signal"></span>
               }
             </button>
           </div>
 
           @if (errorMensaje()) {
-            <div class="mb-4 flex items-start gap-2.5 rounded-md border border-danger/30 bg-danger/[0.07] p-3 text-[0.7rem] leading-relaxed text-danger">
-              <svg class="mt-0.5 h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="mb-5 flex items-start gap-3 rounded-md border border-danger/30 bg-danger/[0.07] p-3.5 text-xs sm:text-sm leading-relaxed text-danger">
+              <svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="9" stroke-width="1.8"></circle>
                 <path stroke-linecap="round" stroke-width="1.8" d="M12 8v4m0 3.5v.01"></path>
               </svg>
@@ -236,8 +188,8 @@ import { AuthService } from '../../core/services/auth.service';
           }
 
           @if (exitoMensaje()) {
-            <div class="mb-4 flex items-start gap-2.5 rounded-md border border-ok/30 bg-ok/[0.07] p-3 text-[0.7rem] leading-relaxed text-ok">
-              <svg class="mt-0.5 h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="mb-5 flex items-start gap-3 rounded-md border border-ok/30 bg-ok/[0.07] p-3.5 text-xs sm:text-sm leading-relaxed text-ok">
+              <svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 13 4 4 10-10"></path>
               </svg>
               <span>{{ exitoMensaje() }}</span>
@@ -245,25 +197,25 @@ import { AuthService } from '../../core/services/auth.service';
           }
 
           @if (tabActiva() === 'login') {
-            <form [formGroup]="loginForm" (ngSubmit)="onSubmitLogin()" class="space-y-4">
+            <form [formGroup]="loginForm" (ngSubmit)="onSubmitLogin()" class="space-y-5">
               <div>
-                <label class="label" for="login-correo">Correo electrónico</label>
+                <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block" for="login-correo">Correo electrónico</label>
                 <div class="relative">
-                  <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-mist/60">
-                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-mist/60">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <rect x="3" y="5" width="18" height="14" rx="2" stroke-width="1.8"></rect>
                       <path stroke-width="1.8" d="m3.5 7 8.5 6 8.5-6"></path>
                     </svg>
                   </span>
-                  <input id="login-correo" type="email" formControlName="correo" placeholder="nombre@empresa.com" class="field pl-9" />
+                  <input id="login-correo" type="email" formControlName="correo" placeholder="nombre@empresa.com" class="field text-sm sm:text-base h-12 pl-10 pr-4" />
                 </div>
               </div>
 
               <div>
-                <label class="label" for="login-pass">Contraseña</label>
+                <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block" for="login-pass">Contraseña</label>
                 <div class="relative">
-                  <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-mist/60">
-                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-mist/60">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <rect x="4" y="10" width="16" height="10" rx="2" stroke-width="1.8"></rect>
                       <path stroke-width="1.8" d="M8 10V7a4 4 0 0 1 8 0v3"></path>
                     </svg>
@@ -273,12 +225,12 @@ import { AuthService } from '../../core/services/auth.service';
                     [type]="verPassword() ? 'text' : 'password'"
                     formControlName="password"
                     placeholder="••••••••"
-                    class="field pl-9 pr-11"
+                    class="field text-sm sm:text-base h-12 pl-10 pr-12"
                   />
                   <button
                     type="button"
                     (click)="verPassword.set(!verPassword())"
-                    class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-mist/70 transition-colors hover:text-chalk"
+                    class="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-mist/70 transition-colors hover:text-chalk"
                     [attr.aria-label]="verPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
                   >
                     @if (verPassword()) {
@@ -295,12 +247,12 @@ import { AuthService } from '../../core/services/auth.service';
                 </div>
               </div>
 
-              <button type="submit" [disabled]="cargando()" class="btn btn-signal mt-1 h-11 w-full">
+              <button type="submit" [disabled]="cargando()" class="btn btn-signal mt-2 h-12 w-full text-sm sm:text-base font-bold">
                 @if (cargando()) {
                   <span class="h-4 w-4 animate-spin rounded-full border-2 border-void/25 border-t-void"></span>
-                  <span>Validando acceso…</span>
+                  <span>Iniciando sesión…</span>
                 } @else {
-                  <span>Entrar a la consola</span>
+                  <span>Iniciar sesión</span>
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-5-5 5 5-5 5"></path>
                   </svg>
@@ -310,42 +262,42 @@ import { AuthService } from '../../core/services/auth.service';
           }
 
           @if (tabActiva() === 'register') {
-            <form [formGroup]="registerForm" (ngSubmit)="onSubmitRegister()" class="space-y-3">
+            <form [formGroup]="registerForm" (ngSubmit)="onSubmitRegister()" class="space-y-3.5">
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="label">Nombre</label>
-                  <input type="text" formControlName="nombre" placeholder="Juan" class="field" />
+                  <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block">Nombre</label>
+                  <input type="text" formControlName="nombre" placeholder="Juan" class="field text-sm h-11" />
                 </div>
                 <div>
-                  <label class="label">Apellido</label>
-                  <input type="text" formControlName="apellido" placeholder="Pérez" class="field" />
+                  <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block">Apellido</label>
+                  <input type="text" formControlName="apellido" placeholder="Pérez" class="field text-sm h-11" />
                 </div>
               </div>
 
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="label">Documento</label>
-                  <input type="text" formControlName="documento" placeholder="10001000" class="field field-mono" />
+                  <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block">Documento</label>
+                  <input type="text" formControlName="documento" placeholder="10001000" class="field field-mono text-sm h-11" />
                 </div>
                 <div>
-                  <label class="label">Teléfono</label>
-                  <input type="text" formControlName="telefono" placeholder="3001234567" class="field field-mono" />
+                  <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block">Teléfono</label>
+                  <input type="text" formControlName="telefono" placeholder="3001234567" class="field field-mono text-sm h-11" />
                 </div>
               </div>
 
               <div>
-                <label class="label">Correo electrónico</label>
-                <input type="email" formControlName="correo" placeholder="juan@empresa.com" class="field" />
+                <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block">Correo electrónico</label>
+                <input type="email" formControlName="correo" placeholder="juan@empresa.com" class="field text-sm h-11" />
               </div>
 
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="label">Contraseña</label>
-                  <input type="password" formControlName="password" placeholder="••••••••" class="field" />
+                  <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block">Contraseña</label>
+                  <input type="password" formControlName="password" placeholder="••••••••" class="field text-sm h-11" />
                 </div>
                 <div>
-                  <label class="label">Rol</label>
-                  <select formControlName="rol" class="field">
+                  <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block">Rol</label>
+                  <select formControlName="rol" class="field text-sm h-11">
                     <option value="usuario">Conductor</option>
                     <option value="guardia">Guardia</option>
                     <option value="administrador">Administrador</option>
@@ -354,11 +306,11 @@ import { AuthService } from '../../core/services/auth.service';
               </div>
 
               <div>
-                <label class="label">Placas <span class="normal-case tracking-normal text-mist/50">(separadas por coma)</span></label>
-                <input type="text" formControlName="placasStr" placeholder="ABC-123, XYZ-789" class="field field-mono uppercase" />
+                <label class="label text-xs sm:text-sm font-medium text-chalk/90 mb-1.5 block">Placas <span class="normal-case tracking-normal text-mist/60">(separadas por coma)</span></label>
+                <input type="text" formControlName="placasStr" placeholder="ABC-123, XYZ-789" class="field field-mono text-sm uppercase h-11" />
               </div>
 
-              <button type="submit" [disabled]="cargando()" class="btn btn-signal mt-1 h-11 w-full">
+              <button type="submit" [disabled]="cargando()" class="btn btn-signal mt-2 h-12 w-full text-sm sm:text-base font-bold">
                 @if (cargando()) {
                   <span class="h-4 w-4 animate-spin rounded-full border-2 border-void/25 border-t-void"></span>
                   <span>Creando cuenta…</span>
@@ -372,15 +324,14 @@ import { AuthService } from '../../core/services/auth.service';
             </form>
           }
 
-          <div class="mt-7 flex items-center justify-between border-t border-edge pt-5">
-            <a routerLink="/unirse" class="group inline-flex items-center gap-2 text-[0.68rem] font-medium text-mist transition-colors hover:text-chalk">
-              <svg class="h-3.5 w-3.5 text-signal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="mt-8 flex items-center justify-between border-t border-edge pt-5">
+            <a routerLink="/unirse" class="group inline-flex items-center gap-2 text-sm font-medium text-mist transition-colors hover:text-chalk">
+              <svg class="h-4 w-4 text-signal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 7a2 2 0 0 1 2 2m4 0a6 6 0 0 1-7.7 5.7L11 17H9v2H7v2H4a1 1 0 0 1-1-1v-2.6a1 1 0 0 1 .3-.7l6-6A6 6 0 1 1 21 9Z"></path>
               </svg>
               Tengo un código de invitación
               <span class="transition-transform group-hover:translate-x-0.5">→</span>
             </a>
-            <span class="mono hidden text-[0.52rem] uppercase tracking-[0.14em] text-mist/50 sm:block">TLS / JWT</span>
           </div>
         </div>
       </section>
@@ -398,15 +349,23 @@ export class LoginComponent {
   exitoMensaje = signal<string | null>(null);
   verPassword = signal<boolean>(false);
 
-  demoSlots = Array.from({ length: 18 }, (_, i) => ({
-    codigo: String(i + 1).padStart(2, '0'),
-    ocupado: [2, 5, 9, 12, 16].includes(i)
-  }));
+  demoSlots = [
+    { codigo: 'A-01', ocupado: false },
+    { codigo: 'A-02', ocupado: true },
+    { codigo: 'A-03', ocupado: false },
+    { codigo: 'A-04', ocupado: false },
+    { codigo: 'A-05', ocupado: true },
+    { codigo: 'A-06', ocupado: false }
+  ];
 
-  demoSlotsB = Array.from({ length: 12 }, (_, i) => ({
-    codigo: `B${String(i + 1).padStart(2, '0')}`,
-    ocupado: [1, 6, 10].includes(i)
-  }));
+  demoSlotsB = [
+    { codigo: 'B-01', ocupado: true },
+    { codigo: 'B-02', ocupado: false },
+    { codigo: 'B-03', ocupado: false },
+    { codigo: 'B-04', ocupado: false },
+    { codigo: 'B-05', ocupado: true },
+    { codigo: 'B-06', ocupado: false }
+  ];
 
   get ocupadosDemo(): number {
     return [...this.demoSlots, ...this.demoSlotsB].filter((s) => s.ocupado).length;
@@ -435,12 +394,6 @@ export class LoginComponent {
     rol: ['usuario', [Validators.required]],
     placasStr: ['']
   });
-
-  autocompletar(correo: string, pass: string): void {
-    this.tabActiva.set('login');
-    this.loginForm.patchValue({ correo, password: pass });
-    this.errorMensaje.set(null);
-  }
 
   onSubmitLogin(): void {
     if (this.loginForm.invalid) {

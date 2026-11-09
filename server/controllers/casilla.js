@@ -246,20 +246,45 @@ function editarCasilla(req, resp) {
 }
 
 function guardarEdicionCasilla(casilla, requestBody, resp) {
-    if (requestBody.codigo) casilla.codigo = requestBody.codigo;
-    if (requestBody.seccion) casilla.seccion = requestBody.seccion;
-    if (requestBody.tipo) casilla.tipo = requestBody.tipo;
-    if (requestBody.estado) casilla.estado = requestBody.estado;
-    if (typeof requestBody.posX === 'number') casilla.posX = requestBody.posX;
-    if (typeof requestBody.posY === 'number') casilla.posY = requestBody.posY;
-    if (typeof requestBody.rotacion === 'number') casilla.rotacion = requestBody.rotacion;
+    let actualizacion = {};
 
-    casilla.save().then(
+    if (requestBody.codigo && typeof requestBody.codigo === 'string') {
+        actualizacion.codigo = requestBody.codigo.trim();
+    }
+    if (requestBody.seccion && typeof requestBody.seccion === 'string') {
+        actualizacion.seccion = requestBody.seccion.trim();
+    }
+    if (requestBody.tipo && tiposValidos.includes(requestBody.tipo)) {
+        actualizacion.tipo = requestBody.tipo;
+    }
+    if (requestBody.estado && estadosValidos.includes(requestBody.estado)) {
+        actualizacion.estado = requestBody.estado;
+    }
+    if (typeof requestBody.posX === 'number' && !isNaN(requestBody.posX)) {
+        actualizacion.posX = Math.round(requestBody.posX);
+    }
+    if (typeof requestBody.posY === 'number' && !isNaN(requestBody.posY)) {
+        actualizacion.posY = Math.round(requestBody.posY);
+    }
+    if (typeof requestBody.rotacion === 'number' && !isNaN(requestBody.rotacion)) {
+        actualizacion.rotacion = ((Math.round(requestBody.rotacion) % 360) + 360) % 360;
+    }
+
+    if (Object.keys(actualizacion).length === 0) {
+        return resp.status(400).send({ "message": "No hay campos válidos para actualizar" });
+    }
+
+    Casillas.findByIdAndUpdate(casilla._id, { $set: actualizacion }, { new: true }).then(
         (casillaActualizada) => {
+            if (!casillaActualizada) {
+                return resp.status(404).send({ "message": "Casilla no encontrada al actualizar" });
+            }
+            console.log('[CASILLA] Actualizada:', casillaActualizada._id, actualizacion);
             socketHelper.emitirEvento('casilla:actualizada', casillaActualizada, casillaActualizada.organizacion);
             resp.status(200).send({ "message": "casilla actualizada", "casilla": casillaActualizada });
         },
         err => {
+            console.error('[CASILLA] Error al actualizar:', err);
             resp.status(500).send({ "message": "Error al actualizar la casilla", "error": err });
         }
     );
