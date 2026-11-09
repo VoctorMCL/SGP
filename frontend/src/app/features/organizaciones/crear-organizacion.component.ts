@@ -349,7 +349,7 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
 
     const pinIcon = L.divIcon({
       className: 'custom-pin',
-      html: `<div style="position:relative;width:34px;height:34px;display:grid;place-items:center;background:#d8ff3e;color:#080b0f;border-radius:8px 8px 8px 2px;box-shadow:0 0 0 4px rgba(216,255,62,.18),0 14px 24px -8px rgba(0,0,0,.9);transform:rotate(-45deg)">
+      html: `<div style="position:relative;width:34px;height:34px;display:grid;place-items:center;background:#cbd5e1;color:#080b0f;border-radius:8px 8px 8px 2px;box-shadow:0 0 0 4px rgba(203,213,225,.25),0 14px 24px -8px rgba(0,0,0,.9);transform:rotate(-45deg)">
         <span style="transform:rotate(45deg);font:700 13px/1 'JetBrains Mono',monospace">P</span>
       </div>`,
       iconSize: [34, 34],

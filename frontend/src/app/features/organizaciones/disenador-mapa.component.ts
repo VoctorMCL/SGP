@@ -374,7 +374,7 @@ interface Feedback {
                         type="button"
                         (pointerdown)="iniciarRotacion($event, sel)"
                         (click)="$event.stopPropagation()"
-                        class="grid h-7 w-7 place-items-center rounded-full border border-signal/60 bg-void text-signal shadow-[0_0_18px_-2px_rgba(216,255,62,0.45)] transition-transform hover:scale-110"
+                        class="grid h-7 w-7 place-items-center rounded-full border border-signal/60 bg-void text-signal shadow-[0_0_18px_-2px_rgba(203,213,225,0.45)] transition-transform hover:scale-110"
                         title="Arrastra para girar"
                       >
                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

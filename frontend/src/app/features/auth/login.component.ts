@@ -22,7 +22,7 @@ import { AuthService } from '../../core/services/auth.service';
         <div class="relative z-10">
           <!-- Marca -->
           <div class="flex items-center gap-4">
-            <div class="notch-sm relative grid h-14 w-14 place-items-center bg-signal text-void shadow-[0_0_40px_-8px_rgba(216,255,62,0.7)]">
+            <div class="notch-sm relative grid h-14 w-14 place-items-center bg-signal text-void shadow-[0_0_40px_-8px_rgba(203,213,225,0.5)]">
               <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square">
                 <path d="M7.5 18V6h5.2a3.6 3.6 0 1 1 0 7.2H8.4" />
                 <path d="M7.5 13.2h5.2" />

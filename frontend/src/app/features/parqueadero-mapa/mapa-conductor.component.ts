@@ -53,7 +53,7 @@ import { Casilla, Organizacion, Reserva } from '../../core/models';
           <div class="panel-flat flex items-center gap-3.5 px-4 py-3">
             <div
               class="relative grid h-14 w-14 place-items-center rounded-full"
-              [style.background]="'conic-gradient(#d8ff3e 0 ' + porcentajeOcupacion() + '%, #1b2230 ' + porcentajeOcupacion() + '% 100%)'"
+              [style.background]="'conic-gradient(#cbd5e1 0 ' + porcentajeOcupacion() + '%, #1b2230 ' + porcentajeOcupacion() + '% 100%)'"
             >
               <div class="grid h-[2.6rem] w-[2.6rem] place-items-center rounded-full bg-panel">
                 <span class="mono text-[0.7rem] font-semibold text-chalk">{{ porcentajeOcupacion() }}%</span>

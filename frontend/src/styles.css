@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Nunito", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --color-void: #05070b;
@@ -12,7 +12,7 @@
   --color-edge-strong: #2b3648;
   --color-mist: #8a94a7;
   --color-chalk: #eef2f8;
-  --color-signal: #d8ff3e;
+  --color-signal: #cbd5e1;
   --color-flow: #5d8bff;
   --color-ok: #46e6a5;
   --color-danger: #ff6573;
@@ -31,7 +31,7 @@
     background-color: var(--color-void);
     background-image:
       radial-gradient(900px 520px at 8% -12%, rgba(93, 139, 255, 0.13), transparent 62%),
-      radial-gradient(760px 480px at 102% -6%, rgba(216, 255, 62, 0.07), transparent 58%),
+      radial-gradient(760px 480px at 102% -6%, rgba(203, 213, 225, 0.07), transparent 58%),
       linear-gradient(rgba(255, 255, 255, 0.016) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255, 255, 255, 0.016) 1px, transparent 1px);
     background-size: auto, auto, 56px 56px, 56px 56px;
@@ -102,7 +102,7 @@
 
   .panel-rail {
     background:
-      linear-gradient(90deg, rgba(216, 255, 62, 0.045), transparent 26%),
+      linear-gradient(90deg, rgba(203, 213, 225, 0.045), transparent 26%),
       linear-gradient(170deg, #10151f 0%, #0a0e15 100%);
     border: 1px solid var(--color-edge);
     border-radius: 1rem;
@@ -124,7 +124,7 @@
   .hatch {
     background-image: repeating-linear-gradient(
       45deg,
-      rgba(216, 255, 62, 0.9) 0 6px,
+      rgba(203, 213, 225, 0.9) 0 6px,
       transparent 6px 13px
     );
   }
@@ -168,7 +168,7 @@
     width: 1.4rem;
     height: 1px;
     background: var(--color-signal);
-    box-shadow: 0 0 10px rgba(216, 255, 62, 0.55);
+    box-shadow: 0 0 10px rgba(203, 213, 225, 0.55);
   }
 
   .label {
@@ -230,13 +230,13 @@
     background: var(--color-signal);
     color: #080b0f;
     box-shadow:
-      0 0 0 1px rgba(216, 255, 62, 0.25),
-      0 14px 34px -16px rgba(216, 255, 62, 0.65);
+      0 0 0 1px rgba(203, 213, 225, 0.25),
+      0 14px 34px -16px rgba(203, 213, 225, 0.65);
     clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
   }
 
   .btn-signal:hover {
-    background: #e6ff70;
+    background: #e2e8f0;
     transform: translateY(-1px);
   }
 
@@ -301,8 +301,8 @@
   }
 
   .tag-signal {
-    background: rgba(216, 255, 62, 0.09);
-    border-color: rgba(216, 255, 62, 0.26);
+    background: rgba(203, 213, 225, 0.09);
+    border-color: rgba(203, 213, 225, 0.26);
     color: var(--color-signal);
   }
 
@@ -377,9 +377,9 @@
 
   .field:focus {
     outline: none;
-    border-color: rgba(216, 255, 62, 0.55);
+    border-color: rgba(203, 213, 225, 0.55);
     background: #0a0e15;
-    box-shadow: 0 0 0 3px rgba(216, 255, 62, 0.075);
+    box-shadow: 0 0 0 3px rgba(203, 213, 225, 0.075);
   }
 
   select.field {
@@ -407,7 +407,7 @@
     height: 6px;
     border: 1px solid var(--color-edge);
     border-radius: 99px;
-    background: linear-gradient(90deg, rgba(216, 255, 62, 0.55), rgba(93, 139, 255, 0.45));
+    background: linear-gradient(90deg, rgba(203, 213, 225, 0.55), rgba(93, 139, 255, 0.45));
     outline: none;
     cursor: pointer;
   }
@@ -421,8 +421,8 @@
     border-radius: 999px;
     background: var(--color-signal);
     box-shadow:
-      0 0 0 1px rgba(216, 255, 62, 0.6),
-      0 0 18px -2px rgba(216, 255, 62, 0.8);
+      0 0 0 1px rgba(203, 213, 225, 0.6),
+      0 0 18px -2px rgba(203, 213, 225, 0.8);
     transition: transform 140ms ease;
   }
 
@@ -438,8 +438,8 @@
     border-radius: 999px;
     background: var(--color-signal);
     box-shadow:
-      0 0 0 1px rgba(216, 255, 62, 0.6),
-      0 0 18px -2px rgba(216, 255, 62, 0.8);
+      0 0 0 1px rgba(203, 213, 225, 0.6),
+      0 0 18px -2px rgba(203, 213, 225, 0.8);
   }
 
   .range::-moz-range-track {
@@ -494,9 +494,9 @@
     justify-content: center;
     width: 1.7rem;
     height: 1.7rem;
-    border: 1px solid rgba(216, 255, 62, 0.35);
+    border: 1px solid rgba(203, 213, 225, 0.35);
     border-radius: 0.35rem;
-    background: rgba(216, 255, 62, 0.08);
+    background: rgba(203, 213, 225, 0.08);
     color: var(--color-signal);
     font-family: var(--font-mono);
     font-size: 0.62rem;
@@ -679,8 +679,8 @@
     outline-offset: 3px;
     z-index: 30;
     box-shadow:
-      0 0 0 1px rgba(216, 255, 62, 0.25),
-      0 0 34px -4px rgba(216, 255, 62, 0.35);
+      0 0 0 1px rgba(203, 213, 225, 0.25),
+      0 0 34px -4px rgba(203, 213, 225, 0.35);
   }
 
   .bay-code {
@@ -977,15 +977,15 @@
 
 .tool-btn-active {
   color: var(--color-signal);
-  border-color: rgba(216, 255, 62, 0.42);
-  background: rgba(216, 255, 62, 0.08);
-  box-shadow: 0 0 0 1px rgba(216, 255, 62, 0.08) inset;
+  border-color: rgba(203, 213, 225, 0.42);
+  background: rgba(203, 213, 225, 0.08);
+  box-shadow: 0 0 0 1px rgba(203, 213, 225, 0.08) inset;
 }
 
 .tool-btn-active:hover {
   color: var(--color-signal);
-  border-color: rgba(216, 255, 62, 0.55);
-  background: rgba(216, 255, 62, 0.11);
+  border-color: rgba(203, 213, 225, 0.55);
+  background: rgba(203, 213, 225, 0.11);
 }
 
 kbd.node-key {
@@ -1016,7 +1016,7 @@ kbd.node-key {
 
 .map-dark .leaflet-control-zoom a:hover {
   background: #111824 !important;
-  color: #d8ff3e !important;
+  color: #cbd5e1 !important;
 }
 
 .map-dark .leaflet-control-attribution {
