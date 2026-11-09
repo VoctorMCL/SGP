@@ -29,7 +29,7 @@ Crea una nueva casilla en una organización. **Solo administradores** pueden cre
 
 ### Respuestas
 
-**200 OK**
+**201 Created**
 ```json
 {
   "message": "Casilla creada correctamente",

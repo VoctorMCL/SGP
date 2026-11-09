@@ -3,12 +3,13 @@
 let Usuarios = require("../models/usuario");
 let auth = require("../helpers/auth");
 let validacion = require("../helpers/validacion");
+let { errorInterno } = require("../helpers/respuestas");
 let bcrypt = require("bcrypt");
 
 let rolesValidos = ['administrador', 'guardia', 'usuario'];
 
 function registrarUsuario(req, resp) {
-    let requestBody = req.body;
+    let requestBody = req.body || {};
 
     if (!requestBody.nombre || !requestBody.apellido || !requestBody.documento || !requestBody.telefono || !requestBody.correo || !requestBody.password) {
         return resp.status(400).send({ "message": "Faltan datos obligatorios del usuario" });
@@ -62,27 +63,28 @@ function registrarUsuario(req, resp) {
                         (usuarioCreado) => {
                             let datos = usuarioCreado.toObject();
                             delete datos.password;
-                            resp.status(200).send({ "message": "usuario creado", "usuario": datos });
+                            resp.status(201).send({ "message": "usuario creado", "usuario": datos });
                         },
                         err => {
-                            resp.status(500).send({ "message": "Error al crear el usuario", "error": err });
+                            errorInterno(resp, "Error al crear el usuario", err);
                         }
                     );
                 },
                 err => {
-                    resp.status(500).send({ "message": "Error al validar el documento", "error": err });
+                    errorInterno(resp, "Error al validar el documento", err);
                 }
             );
         },
         err => {
-            resp.status(500).send({ "message": "Error al validar el correo", "error": err });
+            errorInterno(resp, "Error al validar el correo", err);
         }
     );
 }
 
 function loguearUsuario(req, resp) {
-    let correo = req.body.correo;
-    let password = req.body.password;
+    let requestBody = req.body || {};
+    let correo = requestBody.correo;
+    let password = requestBody.password;
 
     if (!validacion.texto(correo) || !validacion.texto(password)) {
         return resp.status(400).send({ "message": "Debe enviar un correo y password de tipo texto" });
@@ -90,16 +92,13 @@ function loguearUsuario(req, resp) {
 
     Usuarios.findOne({ "correo": correo.toLowerCase() }).then(
         (usuario) => {
-            if (!usuario) {
-                return resp.status(404).send({ "message": "No existe el usuario" });
-            }
-            if (!bcrypt.compareSync(password, usuario.password)) {
-                return resp.status(401).send({ "message": "Contraseña incorrecta" });
+            if (!usuario || !bcrypt.compareSync(password, usuario.password)) {
+                return resp.status(401).send({ "message": "Correo o contraseña incorrectos" });
             }
             resp.status(200).send({ "token": auth.crearToken(usuario) });
         },
         err => {
-            resp.status(500).send({ "message": "Error al loguear el usuario", "error": err });
+            errorInterno(resp, "Error al loguear el usuario", err);
         }
     )
 }
@@ -115,7 +114,7 @@ function perfilUsuario(req, resp) {
             resp.status(200).send({ "message": "perfil encontrado", "usuario": datos });
         },
         err => {
-            resp.status(500).send({ "message": "Error al consultar el perfil", "error": err });
+            errorInterno(resp, "Error al consultar el perfil", err);
         }
     );
 }

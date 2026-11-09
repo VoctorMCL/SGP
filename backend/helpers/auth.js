@@ -2,8 +2,10 @@
 
 let jwt = require('jwt-simple');
 let moment = require('moment');
+let mongoose = require('mongoose');
 
-let secret = "abc";
+let secret = process.env.JWT_SECRET || "abc";
+let rolesValidos = ['administrador', 'guardia', 'usuario'];
 
 function crearToken(usuario) {
     let payload = {
@@ -17,14 +19,27 @@ function crearToken(usuario) {
 }
 
 function validarToken(req, resp, next) {
+    let autorizacion = req.headers.authorization || '';
+
+    if (!autorizacion.startsWith('Bearer ')) {
+        return resp.status(401).send({ "message": "No autorizado, debe iniciar sesion" });
+    }
+
+    let token = autorizacion.slice('Bearer '.length).trim();
+    if (!token) {
+        return resp.status(401).send({ "message": "No autorizado, debe iniciar sesion" });
+    }
+
     try {
-        let token = req.headers.authorization.replace("Bearer ", "");
         let payload = jwt.decode(token, secret);
+        if (!payload.sub || !mongoose.isValidObjectId(payload.sub) || !rolesValidos.includes(payload.rol)) {
+            return resp.status(401).send({ "message": "Token invalido" });
+        }
         req.usuario = { "id": payload.sub, "rol": payload.rol };
         next();
     }
     catch (ex) {
-        resp.status(401).send({ "message": "No autorizado, debe iniciar sesion" });
+        resp.status(401).send({ "message": "No autorizado, token invalido o vencido" });
     }
 }
 

@@ -33,7 +33,7 @@ Crea una nueva organización/sede. **Solo administradores** pueden crearla.
 
 ### Respuestas
 
-**200 OK**
+**201 Created**
 ```json
 {
   "message": "Organizacion creada correctamente",
@@ -100,7 +100,7 @@ Unirse a una organización usando el código de invitación.
 
 ### Respuestas
 
-**200 OK**
+**201 Created**
 ```json
 {
   "message": "Te has unido correctamente a la organización",

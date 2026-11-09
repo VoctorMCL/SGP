@@ -44,7 +44,8 @@ SGP es una aplicación **fullstack unificada**. Todo corre desde un solo proyect
 - **`backend/routes/`** - Definición de rutas con sus respectivos middlewares de autenticación/autorización.
 - **`backend/controllers/`** - Lógica de negocio por recurso.
 - **`backend/models/`** - Esquemas Mongoose.
-- **`backend/helpers/`** - Utilidades transversales (`auth.js`, `socket.js`, `validacion.js`).
+- **`backend/helpers/`** - Utilidades transversales (`auth.js`, `socket.js`, `validacion.js`, `respuestas.js`).
+- **`backend/middlewares/`** - Validación del cuerpo/`Content-Type` y manejo central de errores con respuestas JSON y códigos HTTP coherentes.
 
 ### Frontend
 - **`frontend/src/app/core/`** - Servicios, guards, interceptores y modelos compartidos.

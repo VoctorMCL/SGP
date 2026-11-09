@@ -9,12 +9,17 @@ const routerUsuario = require('./routes/usuario');
 const routerOrganizacion = require('./routes/organizacion');
 const routerCasilla = require('./routes/casilla');
 const routerReserva = require('./routes/reserva');
+const { validarCuerpoJson } = require('./middlewares/validarCuerpo');
+const { manejarErrores } = require('./middlewares/errores');
 
 const app = express();
 
+app.disable('x-powered-by');
+
 // Middlewares globales
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '1mb' }));
 app.use(cors());
+app.use(validarCuerpoJson);
 
 // Rutas de la API REST
 app.use(routerUsuario);
@@ -48,5 +53,8 @@ app.use((req, res, next) => {
 
     next();
 });
+
+// Manejador central: cualquier error debe salir como JSON con su status HTTP
+app.use(manejarErrores);
 
 module.exports = app;

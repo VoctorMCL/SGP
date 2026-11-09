@@ -8,7 +8,7 @@ Crear un archivo `.env` en la raíz del proyecto con las siguientes variables.
 |---|---|---|---|---|
 | `MONGO_URI` | String | Sí | Cadena de conexión a MongoDB. Puede ser local o MongoDB Atlas. | `mongodb://localhost:27017/parqueo` o `mongodb+srv://user:pass@cluster.mongodb.net/parqueo` |
 | `PORT` | Number | No | Puerto donde levantará el servidor. Por defecto `2305`. | `2305` |
-| `JWT_SECRET` | String | Recomendado | Secreto para firmar tokens JWT. **Actualmente el código usa `"abc"` hardcodeado en `helpers/auth.js`**, pero es buena práctica definirlo aquí. | `mi_secreto_super_seguro` |
+| `JWT_SECRET` | String | Recomendado | Secreto para firmar tokens JWT. El código lo lee desde esta variable; si no existe usa `"abc"` como valor de desarrollo. | `mi_secreto_super_seguro` |
 
 ## Ejemplo `.env`
 

@@ -42,7 +42,7 @@ Crea una nueva cuenta de usuario.
 
 ### Respuestas
 
-**200 OK**
+**201 Created**
 ```json
 {
   "message": "usuario creado",
@@ -71,7 +71,7 @@ Crea una nueva cuenta de usuario.
 
 **500 Internal Server Error**
 ```json
-{ "message": "Error al crear el usuario", "error": {...} }
+{ "message": "Error al crear el usuario" }
 ```
 
 ## 2. Login Usuario
@@ -112,19 +112,14 @@ Autentica al usuario y devuelve un token JWT.
 { "message": "Debe enviar un correo y password de tipo texto" }
 ```
 
-**404 Not Found**
-```json
-{ "message": "No existe el usuario" }
-```
-
 **401 Unauthorized**
 ```json
-{ "message": "Contraseña incorrecta" }
+{ "message": "Correo o contraseña incorrectos" }
 ```
 
 **500 Internal Server Error**
 ```json
-{ "message": "Error al loguear el usuario", "error": {...} }
+{ "message": "Error al loguear el usuario" }
 ```
 
 ## 3. Perfil Usuario
@@ -166,5 +161,5 @@ Obtiene la información del usuario autenticado.
 
 **500 Internal Server Error**
 ```json
-{ "message": "Error al consultar the perfil", "error": {...} }
+{ "message": "Error al consultar the perfil" }
 ```

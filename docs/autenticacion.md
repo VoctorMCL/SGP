@@ -25,7 +25,7 @@ let payload = {
 return jwt.encode(payload, secret)
 ```
 
-- **Secreto actual:** `"abc"` (hardcodeado)
+- **Secreto:** se toma de `JWT_SECRET`; si no está definido usa `"abc"` como valor de desarrollo.
 - **Expiración:** 60 minutos
 
 ## Middlewares

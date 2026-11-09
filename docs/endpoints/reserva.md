@@ -25,7 +25,7 @@ Crea una nueva reserva para una casilla. Requiere estar autenticado.
 
 ### Respuestas
 
-**200 OK**
+**201 Created**
 ```json
 {
   "message": "Reserva creada correctamente",

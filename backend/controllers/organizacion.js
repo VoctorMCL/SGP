@@ -5,6 +5,7 @@ let Membresias = require("../models/membresia");
 let Casillas = require("../models/casilla");
 let membresiaHelper = require("../helpers/membresia");
 let validacion = require("../helpers/validacion");
+let { errorInterno } = require("../helpers/respuestas");
 
 let tiposEntidadValidos = ['Residencial', 'Comercial', 'Mixto', 'Publico'];
 
@@ -24,9 +25,12 @@ function banderasValidas(requestBody) {
 }
 
 function crearOrganizacion(req, resp) {
-    let requestBody = req.body;
+    let requestBody = req.body || {};
 
-    if (!requestBody.nombre || !requestBody.nit || !requestBody.tipoEntidad || !requestBody.direccion || !requestBody.totalPuestos || !requestBody.limiteMiembros || !requestBody.zonaHoraria) {
+    if (!requestBody.nombre || !requestBody.nit || !requestBody.tipoEntidad || !requestBody.direccion
+        || requestBody.totalPuestos === undefined || requestBody.totalPuestos === null
+        || requestBody.limiteMiembros === undefined || requestBody.limiteMiembros === null
+        || !requestBody.zonaHoraria) {
         return resp.status(400).send({ "message": "Faltan datos obligatorios de la organizacion" });
     }
     else if (!tiposEntidadValidos.includes(requestBody.tipoEntidad)) {
@@ -76,12 +80,12 @@ function crearOrganizacion(req, resp) {
                     resp.status(201).send({ "message": "organizacion creada", "organizacion": organizacionCreada });
                 },
                 err => {
-                    resp.status(500).send({ "message": "Error al crear la membresia del creador", "error": err });
+                    errorInterno(resp, "Error al crear la membresia del creador", err);
                 }
             );
         },
         err => {
-            resp.status(500).send({ "message": "Error al crear la organizacion", "error": err });
+            errorInterno(resp, "Error al crear la organizacion", err);
         }
     );
 }
@@ -93,13 +97,14 @@ function misOrganizaciones(req, resp) {
             resp.status(200).send({ "message": "organizaciones encontradas", "organizaciones": organizaciones });
         },
         err => {
-            resp.status(500).send({ "message": "Error al consultar organizaciones", "error": err });
+            errorInterno(resp, "Error al consultar organizaciones", err);
         }
     );
 }
 
 function unirseOrganizacion(req, resp) {
-    let codigoInvitacion = req.body.codigoInvitacion;
+    let requestBody = req.body || {};
+    let codigoInvitacion = requestBody.codigoInvitacion;
 
     if (!codigoInvitacion || !validacion.texto(codigoInvitacion)) {
         return resp.status(400).send({ "message": "Debe enviar el codigoInvitacion" });
@@ -135,29 +140,29 @@ function unirseOrganizacion(req, resp) {
                                     resp.status(201).send({ "message": "se unio a la organizacion", "organizacion": organizacion });
                                 },
                                 err => {
-                                    resp.status(500).send({ "message": "Error al unirse a la organizacion", "error": err });
+                                    errorInterno(resp, "Error al unirse a la organizacion", err);
                                 }
                             );
                         },
                         err => {
-                            resp.status(500).send({ "message": "Error al contar los miembros", "error": err });
+                            errorInterno(resp, "Error al contar los miembros", err);
                         }
                     );
                 },
                 err => {
-                    resp.status(500).send({ "message": "Error al buscar la membresia", "error": err });
+                    errorInterno(resp, "Error al buscar la membresia", err);
                 }
             );
         },
         err => {
-            resp.status(500).send({ "message": "Error al buscar la organizacion", "error": err });
+            errorInterno(resp, "Error al buscar la organizacion", err);
         }
     );
 }
 
 function editarOrganizacion(req, resp) {
     let organizacionId = req.params.id;
-    let requestBody = req.body;
+    let requestBody = req.body || {};
 
     if (!validacion.idValido(organizacionId)) {
         return resp.status(400).send({ "message": "Id invalido" });
@@ -199,6 +204,16 @@ function editarOrganizacion(req, resp) {
         return resp.status(400).send({ "message": "reservasPublicas, cobroAutomatico, cobroPorHora y acceso24_7 deben ser true o false" });
     }
 
+    let camposActualizables = [
+        'nombre', 'nit', 'tipoEntidad', 'direccion', 'descripcion', 'totalPuestos',
+        'limiteMiembros', 'zonaHoraria', 'reservasPublicas', 'cobroAutomatico',
+        'cobroPorHora', 'acceso24_7'
+    ];
+
+    if (!camposActualizables.some((campo) => requestBody[campo] !== undefined)) {
+        return resp.status(400).send({ "message": "No hay campos validos para actualizar" });
+    }
+
     Organizaciones.findById(organizacionId).then(
         (organizacion) => {
             if (!organizacion) {
@@ -217,7 +232,7 @@ function editarOrganizacion(req, resp) {
                         aplicarCambiosOrganizacion(organizacion, requestBody, resp);
                     },
                     err => {
-                        resp.status(500).send({ "message": "Error al validar las casillas existentes", "error": err });
+                        errorInterno(resp, "Error al validar las casillas existentes", err);
                     }
                 );
             }
@@ -226,7 +241,7 @@ function editarOrganizacion(req, resp) {
             }
         },
         err => {
-            resp.status(500).send({ "message": "Error al buscar la organizacion", "error": err });
+            errorInterno(resp, "Error al buscar la organizacion", err);
         }
     );
 }
@@ -250,7 +265,7 @@ function aplicarCambiosOrganizacion(organizacion, requestBody, resp) {
             resp.status(200).send({ "message": "organizacion actualizada", "organizacion": organizacionActualizada });
         },
         err => {
-            resp.status(500).send({ "message": "Error al actualizar la organizacion", "error": err });
+            errorInterno(resp, "Error al actualizar la organizacion", err);
         }
     );
 }
@@ -284,17 +299,17 @@ function listarMiembros(req, resp) {
                             resp.status(200).send({ "message": "miembros encontrados", "miembros": miembros });
                         },
                         err => {
-                            resp.status(500).send({ "message": "Error al consultar los miembros", "error": err });
+                            errorInterno(resp, "Error al consultar los miembros", err);
                         }
                     );
                 },
                 err => {
-                    resp.status(500).send({ "message": "Error al validar la pertenencia", "error": err });
+                    errorInterno(resp, "Error al validar la pertenencia", err);
                 }
             );
         },
         err => {
-            resp.status(500).send({ "message": "Error al buscar la organizacion", "error": err });
+            errorInterno(resp, "Error al buscar la organizacion", err);
         }
     );
 }

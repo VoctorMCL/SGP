@@ -1,6 +1,6 @@
 # SGP - Sistema de Gestión de Parqueo
 
-Proyecto para **Desarrollo Web** (Unilasallista) por **Víctor Manuel Córdoba Larez** y **Ricardo Jaraba Gallego**.
+Proyecto para **Desarrollo Web** (Unilasallista) por **Víctor Manuel Cordoba Larez** y **Ricardo Jaraba Gallego**.
 
 Aplicación **Fullstack unificada (MEAN + Tailwind + Capacitor)**. Un solo proyecto, un solo servidor tanto para web como para API.
 
@@ -223,9 +223,45 @@ Listo. No tienes que editar archivos a mano.
 
 ---
 
+## Códigos de Respuesta y Errores
+
+Todas las respuestas de la API son **JSON**, incluidos los errores. El backend usa estos códigos:
+
+| Código | Cuándo se usa |
+|---|---|
+| `200 OK` | Consulta o actualización exitosa |
+| `201 Created` | Registro de usuario, organización, casilla o reserva creado |
+| `400 Bad Request` | Datos faltantes, inválidos, JSON mal formado o regla de negocio incumplida |
+| `401 Unauthorized` | Token ausente, inválido, vencido o credenciales incorrectas |
+| `403 Forbidden` | El usuario está autenticado pero no tiene permisos |
+| `404 Not Found` | Recurso o ruta de API inexistente |
+| `409 Conflict` | Duplicado detectado directamente por MongoDB |
+| `413 Payload Too Large` | El cuerpo supera el límite de `1mb` |
+| `415 Unsupported Media Type` | El cuerpo no se envió como `application/json` |
+| `500 Internal Server Error` | Fallo inesperado del servidor (sin exponer detalles técnicos) |
+
+Formato de error:
+
+```json
+{ "message": "Descripción del error" }
+```
+
+Cuando aplica, se agrega `detalles`:
+
+```json
+{
+  "message": "Los datos enviados no son validos",
+  "detalles": [{ "campo": "correo", "mensaje": "..." }]
+}
+```
+
+---
+
 ## Notas Importantes
 
-- **Estructura limpia**: El código está separado en `backend/` (Express + MongoDB + Socket.io) y `frontend/` (Angular + Tailwind). El backend mantiene `app.js` (configuración) y `server.js` (arranque), con sus carpetas `routes/`, `controllers/`, `models/` y `helpers/`.
+- **Estructura limpia**: El código está separado en `backend/` (Express + MongoDB + Socket.io) y `frontend/` (Angular + Tailwind). El backend mantiene `app.js` (configuración) y `server.js` (arranque), con sus carpetas `routes/`, `controllers/`, `models/`, `helpers/` y `middlewares/`.
+- **Errores centralizados**: `backend/middlewares/errores.js` convierte cualquier error (JSON inválido, validación de Mongoose, duplicados, etc.) en una respuesta JSON con su código HTTP. `backend/middlewares/validarCuerpo.js` valida el cuerpo y el `Content-Type` antes de llegar a los controladores.
+- **JWT**: El secreto se lee de `JWT_SECRET`. Si no está definido, se usa `"abc"` solo como valor de desarrollo.
 - **Móvil automático**: Los `environments` usan `Capacitor.isNativePlatform()` para decidir si usar rutas relativas o la IP de tu PC.
 - **HTTP en red local**: Se añadió `android:usesCleartextTraffic="true"` y `network_security_config.xml` para permitir conexión HTTP con tu servidor local.
 - **WebSockets**: Funcionan tanto en web (`/`) como en móvil apuntando a `http://IP:2305`

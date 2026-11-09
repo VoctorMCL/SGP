@@ -6,12 +6,13 @@ let Reservas = require("../models/reserva");
 let membresiaHelper = require("../helpers/membresia");
 let validacion = require("../helpers/validacion");
 let socketHelper = require("../helpers/socket");
+let { errorInterno } = require("../helpers/respuestas");
 
 let tiposValidos = ['standard', 'discapacitados', 'electrico', 'entrada', 'salida', 'carril'];
 let estadosValidos = ['libre', 'ocupado'];
 
 function crearCasilla(req, resp) {
-    let requestBody = req.body;
+    let requestBody = req.body || {};
 
     if (!requestBody.organizacion || !requestBody.codigo || !requestBody.seccion) {
         return resp.status(400).send({ "message": "Faltan datos obligatorios de la casilla" });
@@ -28,6 +29,12 @@ function crearCasilla(req, resp) {
     let tipo = requestBody.tipo || 'standard';
     if (!tiposValidos.includes(tipo)) {
         return resp.status(400).send({ "message": "El tipo debe ser standard, discapacitados o electrico" });
+    }
+
+    if ((requestBody.posX !== undefined && !validacion.numero(requestBody.posX))
+        || (requestBody.posY !== undefined && !validacion.numero(requestBody.posY))
+        || (requestBody.rotacion !== undefined && !validacion.numero(requestBody.rotacion))) {
+        return resp.status(400).send({ "message": "posX, posY y rotacion deben ser numeros" });
     }
 
     Organizaciones.findById(requestBody.organizacion).then(
@@ -71,19 +78,19 @@ function crearCasilla(req, resp) {
                                     resp.status(201).send({ "message": "casilla creada", "casilla": casillaCreada });
                                 },
                                 err => {
-                                    resp.status(500).send({ "message": "Error al crear la casilla", "error": err });
+                                    errorInterno(resp, "Error al crear la casilla", err);
                                 }
                             );
                         },
                         err => {
-                            resp.status(500).send({ "message": "Error al contar las casillas", "error": err });
+                            errorInterno(resp, "Error al contar las casillas", err);
                         }
                     );
                 }
             );
         },
         err => {
-            resp.status(500).send({ "message": "Error al buscar la organizacion", "error": err });
+            errorInterno(resp, "Error al buscar la organizacion", err);
         }
     );
 }
@@ -106,12 +113,12 @@ function listarCasillas(req, resp) {
                     resp.status(200).send({ "message": "casillas encontradas", "casillas": casillas });
                 },
                 err => {
-                    resp.status(500).send({ "message": "Error al consultar las casillas", "error": err });
+                    errorInterno(resp, "Error al consultar las casillas", err);
                 }
             );
         },
         err => {
-            resp.status(500).send({ "message": "Error al validar la pertenencia", "error": err });
+            errorInterno(resp, "Error al validar la pertenencia", err);
         }
     );
 }
@@ -149,7 +156,7 @@ function cambiarEstado(req, resp) {
                                 guardarEstadoCasilla(casilla, estado, resp);
                             },
                             err => {
-                                resp.status(500).send({ "message": "Error al validar reservas activas", "error": err });
+                                errorInterno(resp, "Error al validar reservas activas", err);
                             }
                         );
                     }
@@ -158,12 +165,12 @@ function cambiarEstado(req, resp) {
                     }
                 },
                 err => {
-                    resp.status(500).send({ "message": "Error al validar la pertenencia", "error": err });
+                    errorInterno(resp, "Error al validar la pertenencia", err);
                 }
             );
         },
         err => {
-            resp.status(500).send({ "message": "Error al buscar la casilla", "error": err });
+            errorInterno(resp, "Error al buscar la casilla", err);
         }
     );
 }
@@ -176,14 +183,14 @@ function guardarEstadoCasilla(casilla, estado, resp) {
             resp.status(200).send({ "message": "estado actualizado", "casilla": casillaActualizada });
         },
         err => {
-            resp.status(500).send({ "message": "Error al actualizar la casilla", "error": err });
+            errorInterno(resp, "Error al actualizar la casilla", err);
         }
     );
 }
 
 function editarCasilla(req, resp) {
     let casillaId = req.params.id;
-    let requestBody = req.body;
+    let requestBody = req.body || {};
 
     if (!validacion.idValido(casillaId)) {
         return resp.status(400).send({ "message": "Id invalido" });
@@ -200,6 +207,11 @@ function editarCasilla(req, resp) {
     }
     if (requestBody.seccion !== undefined && !validacion.texto(requestBody.seccion)) {
         return resp.status(400).send({ "message": "seccion debe ser texto" });
+    }
+    if ((requestBody.posX !== undefined && !validacion.numero(requestBody.posX))
+        || (requestBody.posY !== undefined && !validacion.numero(requestBody.posY))
+        || (requestBody.rotacion !== undefined && !validacion.numero(requestBody.rotacion))) {
+        return resp.status(400).send({ "message": "posX, posY y rotacion deben ser numeros" });
     }
 
     Casillas.findById(casillaId).then(
@@ -226,7 +238,7 @@ function editarCasilla(req, resp) {
                                 guardarEdicionCasilla(casilla, requestBody, resp);
                             },
                             err => {
-                                resp.status(500).send({ "message": "Error al validar reservas activas", "error": err });
+                                errorInterno(resp, "Error al validar reservas activas", err);
                             }
                         );
                     }
@@ -235,12 +247,12 @@ function editarCasilla(req, resp) {
                     }
                 },
                 err => {
-                    resp.status(500).send({ "message": "Error al buscar la organizacion", "error": err });
+                    errorInterno(resp, "Error al buscar la organizacion", err);
                 }
             );
         },
         err => {
-            resp.status(500).send({ "message": "Error al buscar la casilla", "error": err });
+            errorInterno(resp, "Error al buscar la casilla", err);
         }
     );
 }
@@ -285,7 +297,7 @@ function guardarEdicionCasilla(casilla, requestBody, resp) {
         },
         err => {
             console.error('[CASILLA] Error al actualizar:', err);
-            resp.status(500).send({ "message": "Error al actualizar la casilla", "error": err });
+            errorInterno(resp, "Error al actualizar la casilla", err);
         }
     );
 }
@@ -323,16 +335,16 @@ function eliminarCasilla(req, resp) {
                                     socketHelper.emitirEvento('casilla:eliminada', { _id: casillaId }, casilla.organizacion);
                                     resp.status(200).send({ "message": "casilla eliminada", "id": casillaId });
                                 },
-                                err => resp.status(500).send({ "message": "Error al eliminar la casilla", "error": err })
+                                err => errorInterno(resp, "Error al eliminar la casilla", err)
                             );
                         },
-                        err => resp.status(500).send({ "message": "Error al validar reservas", "error": err })
+                        err => errorInterno(resp, "Error al validar reservas", err)
                     );
                 },
-                err => resp.status(500).send({ "message": "Error al validar organizacion", "error": err })
+                err => errorInterno(resp, "Error al validar organizacion", err)
             );
         },
-        err => resp.status(500).send({ "message": "Error al buscar casilla", "error": err })
+        err => errorInterno(resp, "Error al buscar casilla", err)
     );
 }
 

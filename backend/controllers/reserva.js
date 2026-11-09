@@ -8,11 +8,13 @@ let membresiaHelper = require("../helpers/membresia");
 let auth = require("../helpers/auth");
 let validacion = require("../helpers/validacion");
 let socketHelper = require("../helpers/socket");
+let { errorInterno } = require("../helpers/respuestas");
 
 function crearReserva(req, resp) {
-    let requestBody = req.body;
+    let requestBody = req.body || {};
 
-    if (!requestBody.casilla || !requestBody.placa || !requestBody.duracionHoras) {
+    if (!requestBody.casilla || !requestBody.placa
+        || requestBody.duracionHoras === undefined || requestBody.duracionHoras === null) {
         return resp.status(400).send({ "message": "Faltan datos obligatorios de la reserva" });
     }
     else if (!validacion.idValido(requestBody.casilla)) {
@@ -24,6 +26,8 @@ function crearReserva(req, resp) {
     else if (!validacion.numeroEnteroPositivo(requestBody.duracionHoras)) {
         return resp.status(400).send({ "message": "duracionHoras debe ser un numero entero mayor que cero" });
     }
+
+    let placa = requestBody.placa.trim();
 
     Casillas.findById(requestBody.casilla).then(
         (casilla) => {
@@ -50,7 +54,7 @@ function crearReserva(req, resp) {
                                 "casilla": casilla._id,
                                 "organizacion": casilla.organizacion,
                                 "usuario": req.usuario.id,
-                                "placa": requestBody.placa,
+                                "placa": placa,
                                 "horaInicio": new Date(),
                                 "duracionHoras": requestBody.duracionHoras,
                                 "estado": "activa"
@@ -66,27 +70,27 @@ function crearReserva(req, resp) {
                                             resp.status(201).send({ "message": "reserva creada", "reserva": reservaCreada });
                                         },
                                         err => {
-                                            resp.status(500).send({ "message": "Error al actualizar la casilla", "error": err });
+                                            errorInterno(resp, "Error al actualizar la casilla", err);
                                         }
                                     );
                                 },
                                 err => {
-                                    resp.status(500).send({ "message": "Error al crear la reserva", "error": err });
+                                    errorInterno(resp, "Error al crear la reserva", err);
                                 }
                             );
                         },
                         err => {
-                            resp.status(500).send({ "message": "Error al validar la pertenencia", "error": err });
+                            errorInterno(resp, "Error al validar la pertenencia", err);
                         }
                     );
                 },
                 err => {
-                    resp.status(500).send({ "message": "Error al buscar la organizacion", "error": err });
+                    errorInterno(resp, "Error al buscar la organizacion", err);
                 }
             );
         },
         err => {
-            resp.status(500).send({ "message": "Error al buscar la casilla", "error": err });
+            errorInterno(resp, "Error al buscar la casilla", err);
         }
     );
 }
@@ -126,12 +130,12 @@ function finalizarReserva(req, resp) {
                     completarFinalizacion(reserva, resp);
                 },
                 err => {
-                    resp.status(500).send({ "message": "Error al validar la pertenencia", "error": err });
+                    errorInterno(resp, "Error al validar la pertenencia", err);
                 }
             );
         },
         err => {
-            resp.status(500).send({ "message": "Error al buscar la reserva", "error": err });
+            errorInterno(resp, "Error al buscar la reserva", err);
         }
     );
 }
@@ -154,17 +158,17 @@ function completarFinalizacion(reserva, resp) {
                             resp.status(200).send({ "message": "reserva finalizada", "reserva": reserva });
                         },
                         err => {
-                            resp.status(500).send({ "message": "Error al liberar la casilla", "error": err });
+                            errorInterno(resp, "Error al liberar la casilla", err);
                         }
                     );
                 },
                 err => {
-                    resp.status(500).send({ "message": "Error al finalizar la reserva", "error": err });
+                    errorInterno(resp, "Error al finalizar la reserva", err);
                 }
             );
         },
         err => {
-            resp.status(500).send({ "message": "Error al buscar la casilla", "error": err });
+            errorInterno(resp, "Error al buscar la casilla", err);
         }
     );
 }
@@ -175,7 +179,7 @@ function misReservas(req, resp) {
             resp.status(200).send({ "message": "reservas encontradas", "reservas": reservas });
         },
         err => {
-            resp.status(500).send({ "message": "Error al consultar las reservas", "error": err });
+            errorInterno(resp, "Error al consultar las reservas", err);
         }
     );
 }
@@ -232,17 +236,17 @@ function alertasOrganizacion(req, resp) {
                                 resp.status(200).send({ "message": "alertas encontradas", "zonaHoraria": zona, "alertas": vencidas });
                             },
                             err => {
-                                resp.status(500).send({ "message": "Error al consultar las reservas", "error": err });
+                                errorInterno(resp, "Error al consultar las reservas", err);
                             }
                         );
                 },
                 err => {
-                    resp.status(500).send({ "message": "Error al buscar la organizacion", "error": err });
+                    errorInterno(resp, "Error al buscar la organizacion", err);
                 }
             );
         },
         err => {
-            resp.status(500).send({ "message": "Error al validar la pertenencia", "error": err });
+            errorInterno(resp, "Error al validar la pertenencia", err);
         }
     );
 }

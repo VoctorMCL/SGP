@@ -14,6 +14,10 @@ function booleano(valor) {
     return typeof valor === 'boolean';
 }
 
+function numero(valor) {
+    return typeof valor === 'number' && Number.isFinite(valor);
+}
+
 function texto(valor) {
     return typeof valor === 'string' && valor.trim() !== '';
 }
@@ -31,4 +35,4 @@ function zonaHorariaValida(zona) {
     }
 }
 
-module.exports = { idValido, numeroEnteroPositivo, booleano, texto, zonaHorariaValida };
+module.exports = { idValido, numeroEnteroPositivo, booleano, numero, texto, zonaHorariaValida };
