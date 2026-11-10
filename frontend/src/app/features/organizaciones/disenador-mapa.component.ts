@@ -286,7 +286,8 @@ interface Feedback {
             </div>
           </div>
 
-          <div class="relative h-[30rem] overflow-auto bg-[#06090e] sm:h-[36rem] xl:h-[40rem]">
+          <div class="relative">
+            <div class="relative h-[30rem] overflow-auto bg-[#06090e] sm:h-[36rem] xl:h-[40rem]">
             <div class="min-h-full min-w-full p-4">
               <div
                 class="relative shrink-0"
@@ -301,9 +302,17 @@ interface Feedback {
                   [style.height.px]="ALTO"
                   [style.transform]="'scale(' + zoom() + ')'"
                   [class.cursor-crosshair]="herramienta() !== 'select'"
+                  [class.plan-satelite-moviendo]="satelite() && moverSatelite()"
                   (click)="alClickLienzo($event)"
                   (pointermove)="alMoverSobreLienzo($event)"
                 >
+                  <!-- Capa satelital de fondo (debajo de la cuadrícula y los elementos) -->
+                  @if (satelite()) {
+                    <div class="plan-satelite" [class.plan-satelite--interactivo]="moverSatelite()">
+                      <div id="mapa-satelite-plano" class="h-full w-full"></div>
+                    </div>
+                  }
+
                   <!-- Marco y rótulos -->
                   <div class="pointer-events-none absolute inset-0 border border-edge-strong/40"></div>
                   <span class="pointer-events-none absolute left-2 top-2 z-10 h-5 w-5 border-l border-t border-signal/35"></span>
@@ -461,27 +470,46 @@ interface Feedback {
                 Colocando {{ tipoEtiqueta(herramienta()) }} · Esc para salir
               </div>
             }
+            </div>
+
+            <!-- Controles de la capa satelital -->
+            @if (satelite()) {
+              <div class="absolute left-3 top-3 z-30 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center gap-1.5 rounded-md border border-edge bg-void/90 p-1.5 shadow-xl backdrop-blur">
+                <button
+                  type="button"
+                  (click)="alternarModoSatelite()"
+                  class="mono inline-flex h-7 items-center gap-1.5 rounded px-2 text-[0.55rem] uppercase tracking-[0.1em] transition-colors"
+                  [ngClass]="moverSatelite() ? 'bg-signal/15 text-signal' : 'text-mist hover:bg-white/[0.05] hover:text-chalk'"
+                  title="Mover y hacer zoom en el mapa satelital"
+                >
+                  <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11m0-1.5a1.5 1.5 0 0 1 3 0V12m0-1a1.5 1.5 0 0 1 3 0v5a5 5 0 0 1-5 5h-1.6a4 4 0 0 1-3.1-1.5L4.5 15a1.6 1.6 0 0 1 2.5-2l1 1.3Z"></path>
+                  </svg>
+                  Mover
+                </button>
+
+                <span class="mx-0.5 h-4 w-px bg-edge"></span>
+
+                <button type="button" (click)="zoomSatelite(1)" class="grid h-7 w-7 place-items-center rounded text-mist transition-colors hover:bg-white/[0.06] hover:text-chalk" title="Acercar satélite">+</button>
+                <button type="button" (click)="zoomSatelite(-1)" class="grid h-7 w-7 place-items-center rounded text-mist transition-colors hover:bg-white/[0.06] hover:text-chalk" title="Alejar satélite">−</button>
+
+                <span class="mx-0.5 h-4 w-px bg-edge"></span>
+
+                <button type="button" (click)="centrarSateliteEnPin()" class="mono inline-flex h-7 items-center rounded px-2 text-[0.55rem] uppercase tracking-[0.1em] text-mist transition-colors hover:bg-white/[0.06] hover:text-chalk" title="Centrar en el pin guardado">Centrar pin</button>
+
+                <button type="button" (click)="guardarPinSatelite()" [disabled]="!puedeEditar()" class="btn btn-signal h-7 px-2.5 text-[0.55rem]" title="Guardar el centro actual del mapa como pin de la sede">
+                  {{ sateliteTienePin() ? 'Actualizar pin' : 'Guardar pin' }}
+                </button>
+              </div>
+
+              @if (!sateliteTienePin()) {
+                <div class="pointer-events-none absolute bottom-3 left-1/2 z-30 -translate-x-1/2 rounded-full border border-warn/35 bg-void/90 px-3 py-1.5 text-center text-[0.6rem] text-warn shadow-xl backdrop-blur">
+                  Esta sede no tiene pin guardado. Activa «Mover», ubica el mapa y pulsa «Guardar pin».
+                </div>
+              }
+            }
           </div>
         </section>
-
-        @if (satelite()) {
-          <section class="panel overflow-hidden">
-            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-edge px-4 py-2.5">
-              <div class="flex items-center gap-2">
-                <span class="live-dot scale-75"></span>
-                <span class="mono text-[0.54rem] uppercase tracking-[0.16em] text-chalk">Vista satélite</span>
-                <span class="mono text-[0.5rem] text-mist/60">Centro en el pin de la sede</span>
-              </div>
-              <button type="button" (click)="alternarSatelite()" class="mono text-[0.5rem] uppercase tracking-[0.12em] text-mist transition-colors hover:text-chalk" title="Cerrar vista satélite">
-                Ocultar
-              </button>
-            </div>
-            <div id="mapa-satelite-plano" class="h-[22rem] w-full bg-[#06090e]"></div>
-            <div class="border-t border-edge px-4 py-2">
-              <span class="text-[0.6rem] text-mist">Arrastra el mapa para moverlo libremente y usa la rueda para acercar.</span>
-            </div>
-          </section>
-        }
         </div>
 
         <!-- Inspector -->
@@ -682,6 +710,8 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
   snap = signal<boolean>(true);
   mostrarGrilla = signal<boolean>(true);
   satelite = signal<boolean>(false);
+  moverSatelite = signal<boolean>(false);
+  sateliteTienePin = signal<boolean>(false);
   cursorPos = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
   guardando = signal<boolean>(false);
@@ -737,6 +767,7 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
   private huboMovimiento = false;
   private suprimirClickHasta = 0;
   private mapaSatelite: L.Map | null = null;
+  private marcadorSatelite: L.CircleMarker | null = null;
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -766,9 +797,7 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
         this.organizacion.set(match);
 
         // Si la vista satélite ya está abierta, se recentra en el pin real.
-        if (this.mapaSatelite && typeof match.latitud === 'number' && typeof match.longitud === 'number') {
-          this.mapaSatelite.setView([match.latitud, match.longitud], 18);
-        }
+        this.sincronizarPinSatelite(match);
       }
     });
   }
@@ -835,6 +864,7 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
   alternarSatelite(): void {
     if (this.satelite()) {
       this.satelite.set(false);
+      this.moverSatelite.set(false);
       this.destruirMapaSatelite();
       return;
     }
@@ -842,6 +872,67 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
     this.satelite.set(true);
     // Se espera al siguiente ciclo para que el contenedor ya exista.
     setTimeout(() => this.iniciarMapaSatelite(), 30);
+  }
+
+  /** Activa o desactiva el arrastre del mapa sin bloquear el dibujo. */
+  alternarModoSatelite(): void {
+    this.moverSatelite.update((activo) => !activo);
+    this.aplicarModoSatelite();
+  }
+
+  zoomSatelite(delta: number): void {
+    const mapa = this.mapaSatelite;
+    if (!mapa) return;
+    mapa.setZoom(mapa.getZoom() + delta);
+  }
+
+  centrarSateliteEnPin(): void {
+    const org = this.organizacion();
+    if (typeof org?.latitud === 'number' && typeof org?.longitud === 'number') {
+      this.mapaSatelite?.setView([org.latitud, org.longitud], 18);
+      this.marcadorSatelite?.setLatLng([org.latitud, org.longitud]);
+      return;
+    }
+
+    this.feedback.set({
+      tipo: 'warn',
+      texto: 'Esta sede todavía no tiene un pin guardado. Activa «Mover», ubica el mapa en la dirección real y pulsa «Guardar pin».'
+    });
+  }
+
+  /** Guarda el centro actual del mapa como pin de la sede. */
+  guardarPinSatelite(): void {
+    const org = this.organizacion();
+    const mapa = this.mapaSatelite;
+    if (!org || !mapa) return;
+
+    if (!this.puedeEditar()) {
+      this.feedback.set({ tipo: 'warn', texto: 'Solo el creador de la sede puede guardar su ubicación.' });
+      return;
+    }
+
+    const centro = mapa.getCenter();
+    const latitud = Number(centro.lat.toFixed(6));
+    const longitud = Number(centro.lng.toFixed(6));
+
+    this.organizacionService.editarOrganizacion(org._id, { latitud, longitud }).subscribe({
+      next: () => {
+        const actualizada = { ...org, latitud, longitud };
+        this.organizacion.set(actualizada);
+        this.sateliteTienePin.set(true);
+        this.marcadorSatelite?.setLatLng([latitud, longitud]);
+        this.feedback.set({
+          tipo: 'ok',
+          texto: `Pin guardado en ${latitud}, ${longitud}. La vista satélite ya abre centrada ahí.`
+        });
+      },
+      error: (err) => {
+        this.feedback.set({
+          tipo: 'error',
+          texto: err.error?.message || 'No se pudo guardar el pin de la sede.'
+        });
+      }
+    });
   }
 
   private iniciarMapaSatelite(): void {
@@ -852,34 +943,99 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
     if (!contenedor) return;
 
     const org = this.organizacion();
-    const lat = typeof org?.latitud === 'number' ? org.latitud : 6.172;
-    const lng = typeof org?.longitud === 'number' ? org.longitud : -75.609;
+    const tienePin = typeof org?.latitud === 'number' && typeof org?.longitud === 'number';
+    const lat = tienePin ? (org!.latitud as number) : 6.172;
+    const lng = tienePin ? (org!.longitud as number) : -75.609;
+    this.sateliteTienePin.set(tienePin);
 
     this.mapaSatelite = L.map(contenedor, {
       zoomControl: false,
-      attributionControl: false
+      attributionControl: false,
+      dragging: false,
+      scrollWheelZoom: false,
+      doubleClickZoom: false,
+      boxZoom: false,
+      keyboard: false,
+      touchZoom: false
     }).setView([lat, lng], 18);
 
-    L.control.zoom({ position: 'bottomright' }).addTo(this.mapaSatelite);
-
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19
+      maxZoom: 19,
+      attribution: 'Esri'
     }).addTo(this.mapaSatelite);
 
-    L.circleMarker([lat, lng], {
+    this.marcadorSatelite = L.circleMarker([lat, lng], {
       radius: 7,
-      color: '#5d8bff',
+      color: '#ffffff',
       weight: 2,
       fillColor: '#5d8bff',
-      fillOpacity: 0.9
+      fillOpacity: 0.95
     }).addTo(this.mapaSatelite);
 
+    this.aplicarModoSatelite();
     setTimeout(() => this.mapaSatelite?.invalidateSize(), 120);
+
+    // Las sedes antiguas no guardaron el pin: se intenta ubicar por la dirección.
+    if (!tienePin && org?.direccion) {
+      this.ubicarSatelitePorDireccion(org.direccion);
+    }
+  }
+
+  private aplicarModoSatelite(): void {
+    const mapa = this.mapaSatelite;
+    if (!mapa) return;
+
+    if (this.moverSatelite()) {
+      mapa.dragging.enable();
+      mapa.scrollWheelZoom.enable();
+      mapa.doubleClickZoom.enable();
+      mapa.touchZoom.enable();
+    } else {
+      mapa.dragging.disable();
+      mapa.scrollWheelZoom.disable();
+      mapa.doubleClickZoom.disable();
+      mapa.touchZoom.disable();
+    }
+  }
+
+  /** Recentra el mapa cuando la organización termina de cargar. */
+  private sincronizarPinSatelite(org: Organizacion): void {
+    if (!this.mapaSatelite) return;
+
+    if (typeof org.latitud === 'number' && typeof org.longitud === 'number') {
+      this.sateliteTienePin.set(true);
+      this.mapaSatelite.setView([org.latitud, org.longitud], 18);
+      this.marcadorSatelite?.setLatLng([org.latitud, org.longitud]);
+      return;
+    }
+
+    // La organización cargó después de abrir el mapa y no tiene pin guardado.
+    this.sateliteTienePin.set(false);
+    if (org.direccion) this.ubicarSatelitePorDireccion(org.direccion);
+  }
+
+  private ubicarSatelitePorDireccion(direccion: string): void {
+    const consulta = direccion.trim();
+    if (!consulta) return;
+
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(consulta)}`)
+      .then((res) => res.json())
+      .then((lista: Array<{ lat: string; lon: string }>) => {
+        if (!this.satelite() || !this.mapaSatelite || !lista?.length) return;
+        const lat = Number.parseFloat(lista[0].lat);
+        const lng = Number.parseFloat(lista[0].lon);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+        this.mapaSatelite.setView([lat, lng], 18);
+        this.marcadorSatelite?.setLatLng([lat, lng]);
+      })
+      .catch(() => {});
   }
 
   private destruirMapaSatelite(): void {
     this.mapaSatelite?.remove();
     this.mapaSatelite = null;
+    this.marcadorSatelite = null;
   }
 
   // ── Añadir / duplicar / eliminar ─────────────────────────────────
@@ -965,6 +1121,9 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
   alClickLienzo(event: MouseEvent): void {
     // Un arrastre o giro no debe convertirse en un clic de creación.
     if (this.consumirClickSuprimido()) return;
+
+    // Mientras se mueve el satélite, el clic pertenece al mapa.
+    if (this.satelite() && this.moverSatelite()) return;
 
     const tipo = this.herramienta();
     if (tipo === 'select') {

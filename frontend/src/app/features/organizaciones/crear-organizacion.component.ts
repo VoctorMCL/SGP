@@ -100,19 +100,33 @@ import { CasillaService } from '../../core/services/casilla.service';
               </div>
 
               <div class="sm:col-span-2">
-                <div class="mb-1.5 flex items-end justify-between">
+                <div class="mb-1.5 flex flex-wrap items-end justify-between gap-2">
                   <label class="label mb-0" for="direccion">Ubicación y dirección</label>
-                  <button
-                    type="button"
-                    (click)="usarMiUbicacion()"
-                    class="mono inline-flex items-center gap-1 text-[0.55rem] uppercase tracking-[0.12em] text-flow transition-colors hover:text-chalk"
-                  >
-                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="3" stroke-width="1.8"></circle>
-                      <path stroke-linecap="round" stroke-width="1.8" d="M12 2v3m0 14v3M2 12h3m14 0h3"></path>
-                    </svg>
-                    Usar mi ubicación
-                  </button>
+                  <div class="flex items-center gap-3">
+                    <button
+                      type="button"
+                      (click)="ubicarDireccion()"
+                      class="mono inline-flex items-center gap-1 text-[0.55rem] uppercase tracking-[0.12em] text-flow transition-colors hover:text-chalk"
+                      title="Mover el pin a la dirección escrita"
+                    >
+                      <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="6.5" stroke-width="1.8"></circle>
+                        <path stroke-linecap="round" stroke-width="1.8" d="m16 16 4.5 4.5"></path>
+                      </svg>
+                      Ubicar dirección
+                    </button>
+                    <button
+                      type="button"
+                      (click)="usarMiUbicacion()"
+                      class="mono inline-flex items-center gap-1 text-[0.55rem] uppercase tracking-[0.12em] text-flow transition-colors hover:text-chalk"
+                    >
+                      <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="3" stroke-width="1.8"></circle>
+                        <path stroke-linecap="round" stroke-width="1.8" d="M12 2v3m0 14v3M2 12h3m14 0h3"></path>
+                      </svg>
+                      Usar mi ubicación
+                    </button>
+                  </div>
                 </div>
 
                 <div class="relative overflow-hidden rounded-lg border border-edge bg-[#070a10]">
@@ -130,6 +144,7 @@ import { CasillaService } from '../../core/services/casilla.service';
                   id="direccion"
                   type="text"
                   formControlName="direccion"
+                  (blur)="alSalirDireccion()"
                   placeholder="Dirección detectada o manual (Ej. Calle 10 # 45-20, Itagüí)"
                   class="field mt-3"
                 />
@@ -299,6 +314,11 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
 
   private map: L.Map | null = null;
   private marker: L.Marker | null = null;
+  /** true cuando el usuario colocó el pin a mano (clic, arrastre o GPS). */
+  private pinManual = false;
+  /** Dirección que se obtuvo del pin; evita regeocodificarla en el blur. */
+  private direccionDesdePin = '';
+  private busquedaDireccion: { consulta: string; promesa: Promise<{ lat: number; lng: number } | null> } | null = null;
 
   cargando = signal<boolean>(false);
   errorMensaje = signal<string | null>(null);
@@ -403,9 +423,57 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
    * centrar su vista satélite.
    */
   private actualizarUbicacion(lat: number, lng: number): void {
+    this.pinManual = true;
     this.orgForm.patchValue({ latitud: lat, longitud: lng });
     this.actualizarZonaHoraria(lat, lng);
     this.geocodificarInverso(lat, lng);
+  }
+
+  /**
+   * Busca la dirección escrita y mueve el pin hasta ese punto. Así las
+   * coordenadas guardadas siempre corresponden a la ubicación de la sede.
+   */
+  ubicarDireccion(): void {
+    const direccion = (this.orgForm.controls.direccion.value || '').trim();
+    if (!direccion || direccion === this.direccionDesdePin) return;
+
+    this.buscarCoordenadasDireccion(direccion).then((coords) => {
+      if (!coords) {
+        this.errorMensaje.set('No se encontró esa dirección. Puedes fijar el pin manualmente en el mapa.');
+        return;
+      }
+
+      this.errorMensaje.set(null);
+      this.map?.setView([coords.lat, coords.lng], 16);
+      this.marker?.setLatLng([coords.lat, coords.lng]);
+      this.actualizarUbicacion(coords.lat, coords.lng);
+    });
+  }
+
+  /** Si el usuario escribió la dirección pero no movió el pin, lo ubica al salir. */
+  alSalirDireccion(): void {
+    if (!this.pinManual) this.ubicarDireccion();
+  }
+
+  /** Reutiliza la búsqueda en curso para no duplicar peticiones a Nominatim. */
+  private buscarCoordenadasDireccion(direccion: string): Promise<{ lat: number; lng: number } | null> {
+    if (this.busquedaDireccion?.consulta === direccion) {
+      return this.busquedaDireccion.promesa;
+    }
+
+    const promesa = fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(direccion)}`)
+      .then(res => res.json())
+      .then((lista: Array<{ lat: string; lon: string }>) => {
+        if (!lista?.length) return null;
+
+        const lat = Number.parseFloat(lista[0].lat);
+        const lng = Number.parseFloat(lista[0].lon);
+        return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+      })
+      .catch(() => null);
+
+    this.busquedaDireccion = { consulta: direccion, promesa };
+    return promesa;
   }
 
   /** La zona horaria se deduce de las coordenadas reales del pin. */
@@ -426,6 +494,7 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
       .then(res => res.json())
       .then(data => {
         if (data && data.display_name) {
+          this.direccionDesdePin = data.display_name;
           this.orgForm.patchValue({ direccion: data.display_name });
         }
       })
@@ -448,6 +517,32 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
     this.cargando.set(true);
     this.errorMensaje.set(null);
 
+    // Si escribió la dirección pero no movió el pin, se geocodifica antes de
+    // guardar para que la sede no quede con coordenadas por defecto.
+    const direccion = (this.orgForm.controls.direccion.value || '').trim();
+    const debeUbicar = !this.pinManual && !!direccion && direccion !== this.direccionDesdePin;
+
+    const ubicacion = debeUbicar
+      ? this.buscarCoordenadasDireccion(direccion)
+      : Promise.resolve(null);
+
+    ubicacion.then((coords) => {
+      if (debeUbicar && !coords) {
+        this.cargando.set(false);
+        this.errorMensaje.set('No se pudo ubicar la dirección. Fija el pin manualmente en el mapa o corrige la dirección antes de crear la sede.');
+        return;
+      }
+
+      if (coords) {
+        this.orgForm.patchValue({ latitud: coords.lat, longitud: coords.lng });
+        this.actualizarZonaHoraria(coords.lat, coords.lng);
+      }
+
+      this.enviarCreacion();
+    });
+  }
+
+  private enviarCreacion(): void {
     const val = this.orgForm.value as any;
 
     this.organizacionService.crearOrganizacion(val).subscribe({
