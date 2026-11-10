@@ -18,7 +18,6 @@ import { Organizacion } from '../../core/models';
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-edge pb-4">
         <span class="kicker">Consola / Sedes</span>
         <div class="flex items-center gap-4 text-[0.62rem] text-mist">
-          <span class="flex items-center gap-1.5"><span class="live-dot"></span> Datos sincronizados</span>
           <span class="mono hidden uppercase tracking-[0.14em] text-mist/50 sm:inline">{{ hoy }}</span>
         </div>
       </div>

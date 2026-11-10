@@ -44,43 +44,58 @@ function crearReserva(req, resp) {
                         return resp.status(404).send({ "message": "Organizacion no encontrada" });
                     }
 
-                    membresiaHelper.esMiembro(req.usuario.id, casilla.organizacion).then(
-                        (esMiembro) => {
-                            if (!organizacion.reservasPublicas && !esMiembro) {
-                                return resp.status(403).send({ "message": "Esta organizacion solo permite reservas a sus miembros" });
+                    Reservas.findOne({
+                        "usuario": req.usuario.id,
+                        "organizacion": casilla.organizacion,
+                        "estado": "activa"
+                    }).then(
+                        (reservaActiva) => {
+                            if (reservaActiva) {
+                                return resp.status(409).send({ "message": "Ya tienes una reserva activa en esta sede. Finalizala antes de reservar otro puesto." });
                             }
 
-                            let reserva = new Reservas({
-                                "casilla": casilla._id,
-                                "organizacion": casilla.organizacion,
-                                "usuario": req.usuario.id,
-                                "placa": placa,
-                                "horaInicio": new Date(),
-                                "duracionHoras": requestBody.duracionHoras,
-                                "estado": "activa"
-                            });
+                            membresiaHelper.esMiembro(req.usuario.id, casilla.organizacion).then(
+                                (esMiembro) => {
+                                    if (!organizacion.reservasPublicas && !esMiembro) {
+                                        return resp.status(403).send({ "message": "Esta organizacion solo permite reservas a sus miembros" });
+                                    }
 
-                            reserva.save().then(
-                                (reservaCreada) => {
-                                    casilla.estado = 'ocupado';
-                                    casilla.save().then(
-                                        () => {
-                                            socketHelper.emitirEvento('casilla:actualizada', casilla, casilla.organizacion);
-                                            socketHelper.emitirEvento('reserva:creada', reservaCreada, casilla.organizacion);
-                                            resp.status(201).send({ "message": "reserva creada", "reserva": reservaCreada });
+                                    let reserva = new Reservas({
+                                        "casilla": casilla._id,
+                                        "organizacion": casilla.organizacion,
+                                        "usuario": req.usuario.id,
+                                        "placa": placa,
+                                        "horaInicio": new Date(),
+                                        "duracionHoras": requestBody.duracionHoras,
+                                        "estado": "activa"
+                                    });
+
+                                    reserva.save().then(
+                                        (reservaCreada) => {
+                                            casilla.estado = 'ocupado';
+                                            casilla.save().then(
+                                                () => {
+                                                    socketHelper.emitirEvento('casilla:actualizada', casilla, casilla.organizacion);
+                                                    socketHelper.emitirEvento('reserva:creada', reservaCreada, casilla.organizacion);
+                                                    resp.status(201).send({ "message": "reserva creada", "reserva": reservaCreada });
+                                                },
+                                                err => {
+                                                    errorInterno(resp, "Error al actualizar la casilla", err);
+                                                }
+                                            );
                                         },
                                         err => {
-                                            errorInterno(resp, "Error al actualizar la casilla", err);
+                                            errorInterno(resp, "Error al crear la reserva", err);
                                         }
                                     );
                                 },
                                 err => {
-                                    errorInterno(resp, "Error al crear la reserva", err);
+                                    errorInterno(resp, "Error al validar la pertenencia", err);
                                 }
                             );
                         },
                         err => {
-                            errorInterno(resp, "Error al validar la pertenencia", err);
+                            errorInterno(resp, "Error al validar reservas activas", err);
                         }
                     );
                 },

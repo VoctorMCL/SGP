@@ -734,6 +734,13 @@
     --bay-accent-line: rgba(70, 230, 165, 0.55);
   }
 
+  /* El puesto que el usuario tiene reservado se distingue del ocupado normal. */
+  .bay.es-mi-reserva {
+    --bay-accent: #ffd166;
+    --bay-accent-soft: rgba(255, 200, 87, 0.14);
+    --bay-accent-line: rgba(255, 200, 87, 0.55);
+  }
+
   .bay:hover {
     z-index: 20;
     filter: brightness(1.18);

@@ -160,10 +160,10 @@ type Resultado =
           </div>
 
           <!-- Usuario -->
-          <div class="flex items-center gap-2">
+          <div class="relative flex items-center gap-2">
             <app-theme-toggle></app-theme-toggle>
             @if (authService.currentUser(); as user) {
-              <div class="relative lg:hidden">
+              <div class="lg:hidden">
                 <button
                   type="button"
                   (click)="alternarMenu($event)"

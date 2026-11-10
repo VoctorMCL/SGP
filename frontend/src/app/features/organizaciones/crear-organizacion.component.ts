@@ -41,12 +41,8 @@ import { CasillaService } from '../../core/services/casilla.service';
             <span class="mono">01</span> Identidad
           </span>
           <span class="h-px w-4 bg-edge-strong"></span>
-          <span class="flex items-center gap-2 rounded-md border border-edge px-2.5 py-2 text-mist">
-            <span class="mono">02</span> Operación
-          </span>
-          <span class="h-px w-4 bg-edge-strong"></span>
           <span class="flex items-center gap-2 rounded-md border border-edge px-2.5 py-2 text-mist/60">
-            <span class="mono">03</span> Plano
+            <span class="mono">02</span> Plano
           </span>
         </div>
       </div>
@@ -61,9 +57,9 @@ import { CasillaService } from '../../core/services/casilla.service';
         </div>
       }
 
-      <form [formGroup]="orgForm" (ngSubmit)="crear()" class="mt-6 grid items-start gap-5 lg:grid-cols-12">
+      <form [formGroup]="orgForm" (ngSubmit)="crear()" class="mt-6 grid grid-cols-1 items-start gap-5 lg:grid-cols-12">
         <!-- Columna principal -->
-        <div class="space-y-5 lg:col-span-8">
+        <div class="min-w-0 space-y-5 lg:col-span-8">
           <!-- Identidad -->
           <section class="panel rise-2">
             <div class="flex items-center justify-between border-b border-edge px-6 py-4">
@@ -74,7 +70,7 @@ import { CasillaService } from '../../core/services/casilla.service';
               <span class="mono hidden text-[0.52rem] uppercase tracking-[0.16em] text-mist sm:inline">Datos maestros</span>
             </div>
 
-            <div class="grid gap-4 p-6 sm:grid-cols-2">
+            <div class="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2">
               <div class="sm:col-span-2">
                 <label class="label" for="nombre">Nombre de la organización</label>
                 <input id="nombre" type="text" formControlName="nombre" placeholder="Ej. Parqueadero MetroMall S.A." class="field" />
@@ -102,7 +98,7 @@ import { CasillaService } from '../../core/services/casilla.service';
               <div class="sm:col-span-2">
                 <div class="mb-1.5 flex flex-wrap items-end justify-between gap-2">
                   <label class="label mb-0" for="direccion">Ubicación y dirección</label>
-                  <div class="flex items-center gap-3">
+                  <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <button
                       type="button"
                       (click)="ubicarDireccion()"
@@ -162,71 +158,10 @@ import { CasillaService } from '../../core/services/casilla.service';
               </div>
             </div>
           </section>
-
-          <!-- Operación -->
-          <section class="panel rise-3">
-            <div class="flex items-center justify-between border-b border-edge px-6 py-4">
-              <div class="section-head mb-0">
-                <span class="section-num">02</span>
-                <span class="section-title">Capacidad y operación</span>
-              </div>
-              <span class="mono hidden text-[0.52rem] uppercase tracking-[0.16em] text-mist sm:inline">Reglas del sitio</span>
-            </div>
-
-            <div class="p-6">
-              <div class="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label class="label" for="totalPuestos">Puestos iniciales</label>
-                  <input id="totalPuestos" type="number" min="1" formControlName="totalPuestos" placeholder="24" class="field field-mono" />
-                </div>
-                <div>
-                  <label class="label" for="limiteMiembros">Límite de miembros</label>
-                  <input id="limiteMiembros" type="number" min="1" formControlName="limiteMiembros" placeholder="100" class="field field-mono" />
-                </div>
-              </div>
-
-              <div class="mt-5 border-t border-edge pt-5">
-                <span class="label">Módulos habilitados</span>
-                <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <label class="checkbox-tile">
-                    <input type="checkbox" formControlName="reservasPublicas" />
-                    <span>
-                      <span class="block text-[0.7rem] font-medium text-chalk">Reservas públicas</span>
-                      <span class="block text-[0.58rem] text-mist">Cualquier miembro puede reservar</span>
-                    </span>
-                  </label>
-
-                  <label class="checkbox-tile">
-                    <input type="checkbox" formControlName="cobroAutomatico" />
-                    <span>
-                      <span class="block text-[0.7rem] font-medium text-chalk">Cobro automático</span>
-                      <span class="block text-[0.58rem] text-mist">Válido para Flypass o GoPass</span>
-                    </span>
-                  </label>
-
-                  <label class="checkbox-tile">
-                    <input type="checkbox" formControlName="cobroPorHora" />
-                    <span>
-                      <span class="block text-[0.7rem] font-medium text-chalk">Cobro por hora</span>
-                      <span class="block text-[0.58rem] text-mist">Tarifa variable por tiempo</span>
-                    </span>
-                  </label>
-
-                  <label class="checkbox-tile">
-                    <input type="checkbox" formControlName="acceso24_7" />
-                    <span>
-                      <span class="block text-[0.7rem] font-medium text-chalk">Acceso 24/7</span>
-                      <span class="block text-[0.58rem] text-mist">Sin restricción horaria</span>
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </section>
         </div>
 
         <!-- Columna lateral -->
-        <aside class="space-y-4 lg:sticky lg:top-24 lg:col-span-4">
+        <aside class="min-w-0 space-y-4 lg:sticky lg:top-24 lg:col-span-4">
           <div class="panel notch-tr rise-3 overflow-hidden">
             <div class="relative h-28 overflow-hidden border-b border-edge bg-[#070a10]">
               <div class="absolute inset-0 line-grid opacity-50"></div>
@@ -258,10 +193,6 @@ import { CasillaService } from '../../core/services/casilla.service';
                 <div class="flex items-center justify-between">
                   <dt class="text-mist">Entidad</dt>
                   <dd class="font-medium text-chalk">{{ orgForm.value.tipoEntidad }}</dd>
-                </div>
-                <div class="flex items-center justify-between">
-                  <dt class="text-mist">Puestos</dt>
-                  <dd class="mono font-medium text-signal">{{ orgForm.value.totalPuestos }}</dd>
                 </div>
                 <div class="flex items-center justify-between">
                   <dt class="text-mist">Zona horaria</dt>

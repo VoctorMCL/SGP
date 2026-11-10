@@ -586,6 +586,8 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   private marcoPlanoEl: HTMLElement | null = null;
   private observadorMarco?: ResizeObserver;
   private zoomManual = false;
+  /** Zoom mínimo para que el plano siempre cubra el marco (sin bandas negras). */
+  private zoomAjuste = 0.15;
 
   @ViewChild('marcoPlano')
   set marcoPlano(ref: ElementRef<HTMLElement> | undefined) {
@@ -861,7 +863,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   cambiarZoom(delta: number): void {
     this.zoomManual = true;
-    this.zoom.set(Math.max(0.15, Math.min(1.1, Number((this.zoom() + delta).toFixed(2)))));
+    this.zoom.set(Math.max(this.zoomAjuste, Math.min(1.1, Number((this.zoom() + delta).toFixed(2)))));
   }
 
   resetZoom(): void {
@@ -870,8 +872,6 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   }
 
   private ajustarZoomAlMarco(): void {
-    if (this.zoomManual) return;
-
     const marco = this.marcoPlanoEl;
     if (!marco) return;
 
@@ -881,7 +881,11 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
     // 1px de margen para evitar barras de desplazamiento por redondeo.
     const ajuste = Math.min((ancho - 1) / this.ANCHO, (alto - 1) / this.ALTO);
-    this.zoom.set(Math.max(0.15, Math.min(1.1, Number(ajuste.toFixed(3)))));
+    this.zoomAjuste = Math.max(0.05, Math.min(1.1, Number(ajuste.toFixed(3))));
+
+    if (!this.zoomManual || this.zoom() < this.zoomAjuste) {
+      this.zoom.set(this.zoomAjuste);
+    }
   }
 
   tipoCorto(tipo: Casilla['tipo']): string {

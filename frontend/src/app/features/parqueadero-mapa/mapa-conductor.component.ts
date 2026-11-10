@@ -223,13 +223,14 @@ import { Casilla, Organizacion, Reserva } from '../../core/models';
                         [attr.data-tipo]="c.tipo"
                         [attr.data-estado]="esPuesto(c) ? c.estado : null"
                         [class.is-selected]="casillaSeleccionada()?._id === c._id"
+                        [class.es-mi-reserva]="esMiReserva(c)"
                         [style.left.px]="c.posX || 0"
                         [style.top.px]="c.posY || 0"
                         [style.width.px]="anchoDe(c)"
                         [style.height.px]="altoDe(c)"
                         [style.transform]="'rotate(' + (c.rotacion || 0) + 'deg)'"
                         (click)="seleccionarCasilla(c)"
-                        [title]="c.codigo + ' · ' + (esPuesto(c) ? c.estado : c.tipo)"
+                        [title]="c.codigo + ' · ' + (esPuesto(c) ? (esMiReserva(c) ? 'Tu reserva' : c.estado) : c.tipo)"
                       >
                         @switch (c.tipo) {
                           @case ('standard') {
@@ -238,7 +239,7 @@ import { Casilla, Organizacion, Reserva } from '../../core/models';
                               <path stroke-width="1.3" d="M7 11.5h10"></path>
                             </svg>
                             <span class="bay-code">{{ c.codigo }}</span>
-                            <span class="bay-meta">{{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }}</span>
+                            <span class="bay-meta">{{ esMiReserva(c) ? 'Tu reserva' : (c.estado === 'libre' ? 'Libre' : 'Ocupado') }}</span>
                           }
                           @case ('discapacitados') {
                             <svg class="bay-glyph h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,14 +247,14 @@ import { Casilla, Organizacion, Reserva } from '../../core/models';
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M11 8v5.5h5l2 5.5M8 10a4.6 4.6 0 1 0 5.4 7.4"></path>
                             </svg>
                             <span class="bay-code">{{ c.codigo }}</span>
-                            <span class="bay-meta">{{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }}</span>
+                            <span class="bay-meta">{{ esMiReserva(c) ? 'Tu reserva' : (c.estado === 'libre' ? 'Libre' : 'Ocupado') }}</span>
                           }
                           @case ('electrico') {
                             <svg class="bay-glyph h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="m13 3-8 11h6l-1 7 8-11h-6l1-7Z"></path>
                             </svg>
                             <span class="bay-code">{{ c.codigo }}</span>
-                            <span class="bay-meta">{{ c.estado === 'libre' ? 'Libre' : 'Ocupado' }}</span>
+                            <span class="bay-meta">{{ esMiReserva(c) ? 'Tu reserva' : (c.estado === 'libre' ? 'Libre' : 'Ocupado') }}</span>
                           }
                           @case ('entrada') {
                             <svg class="bay-glyph h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -313,7 +314,7 @@ import { Casilla, Organizacion, Reserva } from '../../core/models';
                       >
                         <span class="text-[0.6rem] font-bold leading-none">{{ c.codigo }}</span>
                         <span class="mono mt-0.5 text-[0.4rem] uppercase tracking-[0.08em] opacity-70">
-                          {{ esPuesto(c) ? (c.estado === 'libre' ? 'Libre' : 'Ocup.') : tipoCorto(c.tipo) }}
+                          {{ esPuesto(c) ? (esMiReserva(c) ? 'Tuya' : c.estado === 'libre' ? 'Libre' : 'Ocup.') : tipoCorto(c.tipo) }}
                         </span>
                       </button>
                     }
@@ -330,23 +331,35 @@ import { Casilla, Organizacion, Reserva } from '../../core/models';
             <div class="flex flex-wrap items-center gap-3 text-[0.55rem] text-mist">
               <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-sm border border-ok/50 bg-ok/[0.14]"></span>Libre</span>
               <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-sm border border-danger/50 bg-danger/[0.14]"></span>Ocupado</span>
+              <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-sm border border-warn/50 bg-warn/[0.14]"></span>Tu reserva</span>
               <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-sm border border-flow/50 bg-flow/[0.14]"></span>Movilidad</span>
               <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-sm border border-warn/50 bg-warn/[0.14]"></span>Eléctrico</span>
             </div>
-            <span class="mono flex items-center gap-1.5 text-[0.5rem] uppercase tracking-[0.1em] text-ok">
-              <span class="live-dot scale-75"></span> Sensores activos
-            </span>
           </div>
         </section>
 
         <!-- Detalle -->
         <aside class="space-y-4 lg:sticky lg:top-24">
+          @if (miReservaActiva(); as reservaActiva) {
+            <div class="panel flex items-center justify-between gap-3 border-warn/25 bg-warn/[0.05] p-3">
+              <div class="min-w-0">
+                <div class="mono text-[0.46rem] uppercase tracking-[0.14em] text-warn">Reserva activa</div>
+                <div class="mt-1 truncate text-[0.68rem] text-chalk">Puesto <strong class="mono">{{ codigoDeReserva(reservaActiva) }}</strong> · {{ reservaActiva.placa }}</div>
+              </div>
+              <button type="button" (click)="irAMiReserva(reservaActiva)" class="btn btn-ghost h-8 shrink-0 px-2.5 text-[0.58rem]">Ver</button>
+            </div>
+          }
+
           @if (casillaSeleccionada(); as sel) {
             <div class="panel overflow-hidden">
               <div class="flex items-center justify-between border-b border-edge px-4 py-3">
                 <span class="mono text-[0.54rem] uppercase tracking-[0.16em] text-chalk">Puesto seleccionado</span>
                 @if (esPuesto(sel)) {
-                  <span class="tag" [ngClass]="sel.estado === 'libre' ? 'tag-ok' : 'tag-danger'">{{ sel.estado === 'libre' ? 'Disponible' : 'Ocupado' }}</span>
+                  @if (miReservaEnCasilla(sel)) {
+                    <span class="tag tag-warn">Reservado por ti</span>
+                  } @else {
+                    <span class="tag" [ngClass]="sel.estado === 'libre' ? 'tag-ok' : 'tag-danger'">{{ sel.estado === 'libre' ? 'Disponible' : 'Ocupado' }}</span>
+                  }
                 } @else {
                   <span class="tag tag-muted">{{ tipoCorto(sel.tipo) }}</span>
                 }
@@ -371,7 +384,11 @@ import { Casilla, Organizacion, Reserva } from '../../core/models';
                     </div>
                     <div class="bg-[#0a0e15] px-3 py-2.5">
                       <div class="mono text-[0.46rem] uppercase tracking-[0.14em] text-mist">Estado</div>
-                      <div class="mt-0.5 text-[0.7rem] font-medium" [ngClass]="sel.estado === 'libre' ? 'text-ok' : 'text-danger'">{{ sel.estado === 'libre' ? 'Inmediata' : 'En uso' }}</div>
+                      @if (miReservaEnCasilla(sel)) {
+                        <div class="mt-0.5 text-[0.7rem] font-medium text-warn">Reservado por ti</div>
+                      } @else {
+                        <div class="mt-0.5 text-[0.7rem] font-medium" [ngClass]="sel.estado === 'libre' ? 'text-ok' : 'text-danger'">{{ sel.estado === 'libre' ? 'Disponible' : 'Ocupado' }}</div>
+                      }
                     </div>
                   </div>
                 }
@@ -382,7 +399,7 @@ import { Casilla, Organizacion, Reserva } from '../../core/models';
                   </div>
                 }
 
-                @if (esPuesto(sel) && sel.estado === 'libre') {
+                @if (esPuesto(sel) && sel.estado === 'libre' && !miReservaActiva()) {
                   <div class="mt-4 space-y-3 border-t border-edge pt-4">
                     <h3 class="mono text-[0.52rem] uppercase tracking-[0.16em] text-mist">Reservar este puesto</h3>
 
@@ -425,6 +442,15 @@ import { Casilla, Organizacion, Reserva } from '../../core/models';
                       }
                     </button>
                   </div>
+                } @else if (esPuesto(sel) && sel.estado === 'libre') {
+                  @if (miReservaActiva(); as reservaActiva) {
+                    <div class="mt-4 space-y-3 border-t border-edge pt-4">
+                      <div class="rounded-md border border-warn/25 bg-warn/[0.06] p-3 text-[0.65rem] leading-relaxed text-warn">
+                        Ya tienes una reserva activa en el puesto <strong class="mono">{{ codigoDeReserva(reservaActiva) }}</strong> con la placa <strong class="mono">{{ reservaActiva.placa }}</strong>. Finalízala para poder reservar otro puesto.
+                      </div>
+                      <button type="button" (click)="irAMiReserva(reservaActiva)" class="btn btn-ghost h-9 w-full">Ver mi reserva</button>
+                    </div>
+                  }
                 } @else if (esPuesto(sel)) {
                   <div class="mt-4 border-t border-edge pt-4">
                     @if (miReservaEnCasilla(sel); as res) {
@@ -505,6 +531,8 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
   private marcoPlanoEl: HTMLElement | null = null;
   private observadorMarco?: ResizeObserver;
   private zoomManual = false;
+  /** Zoom mínimo para que el plano siempre cubra el marco (sin bandas negras). */
+  private zoomAjuste = 0.15;
 
   @ViewChild('marcoPlano')
   set marcoPlano(ref: ElementRef<HTMLElement> | undefined) {
@@ -546,6 +574,15 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
     const total = this.totalPuestos();
     if (!total) return 0;
     return Math.round((this.ocupadasCount() / total) * 100);
+  });
+
+  /** Reserva activa del usuario en esta sede (solo se permite una a la vez). */
+  miReservaActiva = computed(() => {
+    const ids = new Set(this.casillas().map((c) => c._id));
+    return this.misReservas().find((r) => {
+      const cId = typeof r.casilla === 'object' ? r.casilla?._id : r.casilla;
+      return ids.has(cId);
+    });
   });
 
   casillasFiltradas = computed(() => {
@@ -670,8 +707,30 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
     });
   }
 
+  esMiReserva(c: Casilla): boolean {
+    return !!this.miReservaEnCasilla(c);
+  }
+
+  /** Código del puesto asociado a una reserva (la casilla puede venir poblada o como id). */
+  codigoDeReserva(r: Reserva): string {
+    const cId = typeof r.casilla === 'object' ? r.casilla?._id : r.casilla;
+    return this.casillas().find((c) => c._id === cId)?.codigo || '—';
+  }
+
+  /** Lleva la selección al puesto que el usuario tiene reservado. */
+  irAMiReserva(r: Reserva): void {
+    const cId = typeof r.casilla === 'object' ? r.casilla?._id : r.casilla;
+    const casilla = this.casillas().find((c) => c._id === cId);
+    if (casilla) this.seleccionarCasilla(casilla);
+  }
+
   reservarCasilla(casilla: Casilla): void {
     if (!this.placaReserva.trim()) return;
+
+    if (this.miReservaActiva()) {
+      this.mensajeAccion.set('Ya tienes una reserva activa en esta sede. Finalízala antes de reservar otro puesto.');
+      return;
+    }
 
     this.cargandoAccion.set(true);
     this.mensajeAccion.set(null);
@@ -714,7 +773,7 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
 
   cambiarZoom(delta: number): void {
     this.zoomManual = true;
-    this.zoom.set(Math.max(0.15, Math.min(1.4, Number((this.zoom() + delta).toFixed(2)))));
+    this.zoom.set(Math.max(this.zoomAjuste, Math.min(1.4, Number((this.zoom() + delta).toFixed(2)))));
   }
 
   /** Vuelve a encajar el plano completo dentro del recuadro visible. */
@@ -724,8 +783,6 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
   }
 
   private ajustarZoomAlMarco(): void {
-    if (this.zoomManual) return;
-
     const marco = this.marcoPlanoEl;
     if (!marco) return;
 
@@ -735,7 +792,12 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
 
     // 1px de margen para evitar barras de desplazamiento por redondeo.
     const ajuste = Math.min((ancho - 1) / this.ANCHO, (alto - 1) / this.ALTO);
-    this.zoom.set(Math.max(0.15, Math.min(1.4, Number(ajuste.toFixed(3)))));
+    this.zoomAjuste = Math.max(0.05, Math.min(1.4, Number(ajuste.toFixed(3))));
+
+    // Si el plano quedó más pequeño que el marco, se vuelve a ajustar.
+    if (!this.zoomManual || this.zoom() < this.zoomAjuste) {
+      this.zoom.set(this.zoomAjuste);
+    }
   }
 
   tipoCorto(tipo: Casilla['tipo']): string {

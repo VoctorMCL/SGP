@@ -490,11 +490,6 @@ interface Feedback {
 
                 <span class="mx-0.5 h-4 w-px bg-edge"></span>
 
-                <button type="button" (click)="zoomSatelite(1)" class="grid h-7 w-7 place-items-center rounded text-mist transition-colors hover:bg-white/[0.06] hover:text-chalk" title="Acercar (satélite y plano)">+</button>
-                <button type="button" (click)="zoomSatelite(-1)" class="grid h-7 w-7 place-items-center rounded text-mist transition-colors hover:bg-white/[0.06] hover:text-chalk" title="Alejar (satélite y plano)">−</button>
-
-                <span class="mx-0.5 h-4 w-px bg-edge"></span>
-
                 <button type="button" (click)="centrarSateliteEnPin()" class="mono inline-flex h-7 items-center rounded px-2 text-[0.55rem] uppercase tracking-[0.1em] text-mist transition-colors hover:bg-white/[0.06] hover:text-chalk" title="Centrar en el pin guardado">Centrar pin</button>
 
                 <button type="button" (click)="guardarPinSatelite()" [disabled]="!puedeEditar()" class="btn btn-signal h-7 px-2.5 text-[0.55rem]" title="Guardar el centro actual del mapa como pin de la sede">
@@ -704,6 +699,8 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
   private marcoPlanoEl: HTMLElement | null = null;
   private observadorMarco?: ResizeObserver;
   private zoomManual = false;
+  /** Zoom mínimo para que el lienzo siempre cubra el marco (sin bandas negras). */
+  private zoomAjuste = 0.15;
 
   @ViewChild('marcoPlano')
   set marcoPlano(ref: ElementRef<HTMLElement> | undefined) {
@@ -718,10 +715,10 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
 
   /**
    * El satélite se dibuja al doble de resolución y se contrapica al 50%.
-   * Así se mantiene nítido cuando el lienzo se escala (40%–150%) sin
-   * alterar su escala real respecto a las casillas.
+   * El zoom 23 hace que una casilla de 88 × 120 px equivalga aproximadamente
+   * a un puesto real de 3,2 × 4,4 m, para comparar la escala con la imagen.
    */
-  private readonly ZOOM_SATELITE = 19;
+  private readonly ZOOM_SATELITE = 23;
 
   organizacionId = signal<string>('');
   organizacion = signal<Organizacion | null>(null);
@@ -904,12 +901,6 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
     this.aplicarModoSatelite();
   }
 
-  zoomSatelite(delta: number): void {
-    // El zoom mueve todo el lienzo para no perder la escala entre el
-    // satélite y las casillas. El mapa en sí mantiene su zoom de render.
-    this.cambiarZoom(delta * 0.1);
-  }
-
   centrarSateliteEnPin(): void {
     const org = this.organizacion();
     if (typeof org?.latitud === 'number' && typeof org?.longitud === 'number') {
@@ -983,9 +974,10 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
       touchZoom: false
     }).setView([lat, lng], this.ZOOM_SATELITE);
 
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19,
-      attribution: 'Esri'
+    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      maxNativeZoom: 22,
+      maxZoom: this.ZOOM_SATELITE,
+      attribution: 'Google'
     }).addTo(this.mapaSatelite);
 
     this.marcadorSatelite = L.circleMarker([lat, lng], {
@@ -1406,7 +1398,7 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
   // ── Zoom ─────────────────────────────────────────────────────────
   cambiarZoom(delta: number): void {
     this.zoomManual = true;
-    this.zoom.set(Math.max(0.15, Math.min(1.5, Number((this.zoom() + delta).toFixed(2)))));
+    this.zoom.set(Math.max(this.zoomAjuste, Math.min(1.5, Number((this.zoom() + delta).toFixed(2)))));
   }
 
   resetZoom(): void {
@@ -1415,8 +1407,6 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
   }
 
   private ajustarZoomAlMarco(): void {
-    if (this.zoomManual) return;
-
     const marco = this.marcoPlanoEl;
     if (!marco) return;
 
@@ -1426,7 +1416,11 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
 
     // 1px de margen para evitar barras de desplazamiento por redondeo.
     const ajuste = Math.min((ancho - 1) / this.ANCHO, (alto - 1) / this.ALTO);
-    this.zoom.set(Math.max(0.15, Math.min(1.5, Number(ajuste.toFixed(3)))));
+    this.zoomAjuste = Math.max(0.05, Math.min(1.5, Number(ajuste.toFixed(3))));
+
+    if (!this.zoomManual || this.zoom() < this.zoomAjuste) {
+      this.zoom.set(this.zoomAjuste);
+    }
   }
 
   // ── Guardar ──────────────────────────────────────────────────────
