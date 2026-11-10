@@ -7,6 +7,7 @@ let auth = require("../helpers/auth");
 
 router.post("/api/casilla", auth.validarToken, auth.validarAdministrador, casillaController.crearCasilla);
 router.get("/api/casilla/organizacion/:organizacionId", auth.validarToken, casillaController.listarCasillas);
+router.get("/api/casilla/todas", auth.validarToken, casillaController.listarTodasCasillas);
 router.patch("/api/casilla/:id/estado", auth.validarToken, auth.validarGuardiaOAdmin, casillaController.cambiarEstado);
 router.patch("/api/casilla/:id", auth.validarToken, casillaController.editarCasilla);
 router.put("/api/casilla/:id", auth.validarToken, casillaController.editarCasilla);

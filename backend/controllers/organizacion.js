@@ -135,6 +135,25 @@ function misOrganizaciones(req, resp) {
     );
 }
 
+/**
+ * Lista todas las sedes creadas en el sistema para el buscador global.
+ * No expone el codigo de invitacion: un usuario no debe poder unirse a
+ * cualquier sede solo por encontrarla en la busqueda.
+ */
+function todasOrganizaciones(req, resp) {
+    Organizaciones.find({})
+        .select('-codigoInvitacion')
+        .sort({ "nombre": 1 })
+        .then(
+            (organizaciones) => {
+                resp.status(200).send({ "message": "organizaciones encontradas", "organizaciones": organizaciones });
+            },
+            err => {
+                errorInterno(resp, "Error al consultar las organizaciones", err);
+            }
+        );
+}
+
 function unirseOrganizacion(req, resp) {
     let requestBody = req.body || {};
     let codigoInvitacion = requestBody.codigoInvitacion;
@@ -369,4 +388,4 @@ function listarMiembros(req, resp) {
     );
 }
 
-module.exports = { crearOrganizacion, misOrganizaciones, unirseOrganizacion, editarOrganizacion, listarMiembros };
+module.exports = { crearOrganizacion, misOrganizaciones, todasOrganizaciones, unirseOrganizacion, editarOrganizacion, listarMiembros };

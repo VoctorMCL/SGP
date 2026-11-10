@@ -106,25 +106,34 @@ function listarCasillas(req, resp) {
         return resp.status(400).send({ "message": "Id invalido" });
     }
 
-    membresiaHelper.esMiembro(req.usuario.id, organizacionId).then(
-        (esMiembro) => {
-            if (!esMiembro) {
-                return resp.status(403).send({ "message": "No pertenece a esta organizacion" });
-            }
-
-            Casillas.find({ "organizacion": organizacionId }).then(
-                (casillas) => {
-                    resp.status(200).send({ "message": "casillas encontradas", "casillas": casillas });
-                },
-                err => {
-                    errorInterno(resp, "Error al consultar las casillas", err);
-                }
-            );
+    // La vista del conductor es de solo lectura: cualquier usuario autenticado
+    // puede consultar el plano. Reservar sigue validando membresía o que la
+    // sede permita reservas públicas.
+    Casillas.find({ "organizacion": organizacionId }).then(
+        (casillas) => {
+            resp.status(200).send({ "message": "casillas encontradas", "casillas": casillas });
         },
         err => {
-            errorInterno(resp, "Error al validar la pertenencia", err);
+            errorInterno(resp, "Error al consultar las casillas", err);
         }
     );
+}
+
+/**
+ * Lista las casillas de todas las sedes para el buscador global.
+ * Solo devuelve los campos necesarios para mostrar un resultado.
+ */
+function listarTodasCasillas(req, resp) {
+    Casillas.find({})
+        .select('_id organizacion codigo seccion tipo estado')
+        .then(
+            (casillas) => {
+                resp.status(200).send({ "message": "casillas encontradas", "casillas": casillas });
+            },
+            err => {
+                errorInterno(resp, "Error al consultar las casillas", err);
+            }
+        );
 }
 
 function cambiarEstado(req, resp) {
@@ -407,4 +416,4 @@ function eliminarCasilla(req, resp) {
     );
 }
 
-module.exports = { crearCasilla, listarCasillas, cambiarEstado, editarCasilla, eliminarCasilla };
+module.exports = { crearCasilla, listarCasillas, listarTodasCasillas, cambiarEstado, editarCasilla, eliminarCasilla };

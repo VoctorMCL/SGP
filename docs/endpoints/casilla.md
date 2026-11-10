@@ -189,3 +189,33 @@ Elimina una casilla. **Solo administradores** pueden eliminarla.
 **403 Forbidden** - Requiere rol administrador  
 **404 Not Found** - Casilla not found  
 **500 Internal Server Error**
+
+## 6. Listar Todas las Casillas (buscador global)
+
+Lista las casillas de todas las sedes para el buscador global. Solo devuelve los campos necesarios para mostrar un resultado.
+
+- **URL:** `GET /api/casilla/todas`
+- **Auth:** Requiere token
+- **Content-Type:** N/A
+
+### Respuestas
+
+**200 OK**
+```json
+{
+  "message": "Casillas encontradas",
+  "casillas": [
+    {
+      "_id": "66f...",
+      "organizacion": "66f...",
+      "codigo": "A-01",
+      "seccion": "A",
+      "tipo": "standard",
+      "estado": "libre"
+    }
+  ]
+}
+```
+
+**401 Unauthorized**
+**500 Internal Server Error**

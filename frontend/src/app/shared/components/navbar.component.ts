@@ -30,13 +30,7 @@ type Resultado =
               </svg>
               <span class="absolute -bottom-px -right-px h-1.5 w-1.5 bg-flow"></span>
             </div>
-            <div class="leading-none">
-              <div class="flex items-baseline gap-2">
-                <span class="text-[1.32rem] font-bold tracking-[-0.04em] text-chalk">SGP</span>
-                <span class="mono hidden text-[0.55rem] tracking-[0.2em] text-signal sm:inline">V1.0</span>
-              </div>
-              <span class="mono mt-1 hidden text-[0.55rem] uppercase tracking-[0.18em] text-mist sm:block">Control de parqueo</span>
-            </div>
+            <span class="text-[1.32rem] font-bold leading-none tracking-[-0.04em] text-chalk">SGP</span>
           </a>
 
           <!-- Navegación -->
@@ -48,6 +42,13 @@ type Resultado =
             >
               Mis sedes
             </a>
+            <a
+              routerLink="/unirse"
+              routerLinkActive="text-chalk bg-white/[0.045]"
+              class="rounded-md px-3 py-2 text-[0.72rem] font-medium text-mist transition-colors hover:bg-white/[0.035] hover:text-chalk"
+            >
+              Unirse con código
+            </a>
             @if (authService.currentUser()?.rol === 'administrador' || authService.currentUser()?.rol === 'guardia') {
               <a
                 routerLink="/admin"
@@ -58,13 +59,6 @@ type Resultado =
                 <span class="live-dot scale-75"></span>
               </a>
             }
-            <a
-              routerLink="/unirse"
-              routerLinkActive="text-chalk bg-white/[0.045]"
-              class="rounded-md px-3 py-2 text-[0.72rem] font-medium text-mist transition-colors hover:bg-white/[0.035] hover:text-chalk"
-            >
-              Unirse con código
-            </a>
           </nav>
 
           <!-- Buscador global -->
@@ -210,6 +204,18 @@ type Resultado =
                         Mis sedes
                       </a>
 
+                      <a
+                        routerLink="/unirse"
+                        (click)="menuAbierto.set(false)"
+                        routerLinkActive="bg-white/[0.05] text-chalk"
+                        class="flex items-center gap-2.5 rounded px-2.5 py-2 text-[0.7rem] font-medium text-mist transition-colors hover:bg-white/[0.04] hover:text-chalk"
+                      >
+                        <svg class="h-3.5 w-3.5 text-mist" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 7a2 2 0 0 1 2 2m4 0a6 6 0 0 1-7.7 5.7L11 17H9v2H7v2H4a1 1 0 0 1-1-1v-2.6a1 1 0 0 1 .3-.7l6-6A6 6 0 1 1 21 9Z"></path>
+                        </svg>
+                        Unirse con código
+                      </a>
+
                       @if (user.rol === 'administrador' || user.rol === 'guardia') {
                         <a
                           routerLink="/admin"
@@ -224,18 +230,6 @@ type Resultado =
                           <span class="live-dot ml-auto scale-75"></span>
                         </a>
                       }
-
-                      <a
-                        routerLink="/unirse"
-                        (click)="menuAbierto.set(false)"
-                        routerLinkActive="bg-white/[0.05] text-chalk"
-                        class="flex items-center gap-2.5 rounded px-2.5 py-2 text-[0.7rem] font-medium text-mist transition-colors hover:bg-white/[0.04] hover:text-chalk"
-                      >
-                        <svg class="h-3.5 w-3.5 text-mist" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 7a2 2 0 0 1 2 2m4 0a6 6 0 0 1-7.7 5.7L11 17H9v2H7v2H4a1 1 0 0 1-1-1v-2.6a1 1 0 0 1 .3-.7l6-6A6 6 0 1 1 21 9Z"></path>
-                        </svg>
-                        Unirse con código
-                      </a>
                     </nav>
                     <div class="border-t border-edge px-3 py-2">
                       <p class="mono text-[0.5rem] uppercase tracking-[0.12em] text-mist/60">{{ user.nombre }} {{ user.apellido }} · {{ user.rol }}</p>
@@ -394,30 +388,23 @@ export class NavbarComponent {
     if (this.indexado || this.cargando() || !this.authService.getToken()) return;
     this.cargando.set(true);
 
-    this.organizacionService.misOrganizaciones().subscribe({
-      next: (orgs) => {
+    forkJoin({
+      orgs: this.organizacionService.todasOrganizaciones().pipe(catchError(() => of([] as Organizacion[]))),
+      casillas: this.casillaService.todasCasillas().pipe(catchError(() => of([] as Casilla[])))
+    }).subscribe({
+      next: ({ orgs, casillas }) => {
         this.organizaciones.set(orgs);
-        if (orgs.length === 0) {
-          this.cargando.set(false);
-          this.indexado = true;
-          return;
+        const nombres = new Map(orgs.map((org) => [org._id, org.nombre]));
+        const plano: Array<{ orgId: string; orgNombre: string; casilla: Casilla }> = [];
+
+        for (const casilla of casillas) {
+          const orgNombre = nombres.get(casilla.organizacion);
+          if (orgNombre) plano.push({ orgId: casilla.organizacion, orgNombre, casilla });
         }
 
-        forkJoin(
-          orgs.map((org) =>
-            this.casillaService.listarPorOrganizacion(org._id).pipe(catchError(() => of([] as Casilla[])))
-          )
-        ).subscribe((listas) => {
-          const plano: Array<{ orgId: string; orgNombre: string; casilla: Casilla }> = [];
-          listas.forEach((casillas, i) => {
-            for (const casilla of casillas) {
-              plano.push({ orgId: orgs[i]._id, orgNombre: orgs[i].nombre, casilla });
-            }
-          });
-          this.casillas.set(plano);
-          this.cargando.set(false);
-          this.indexado = true;
-        });
+        this.casillas.set(plano);
+        this.cargando.set(false);
+        this.indexado = true;
       },
       error: () => {
         this.cargando.set(false);

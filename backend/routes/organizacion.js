@@ -7,6 +7,7 @@ let auth = require("../helpers/auth");
 
 router.post("/api/organizacion", auth.validarToken, auth.validarAdministrador, organizacionController.crearOrganizacion);
 router.get("/api/organizacion", auth.validarToken, organizacionController.misOrganizaciones);
+router.get("/api/organizacion/todas", auth.validarToken, organizacionController.todasOrganizaciones);
 router.post("/api/organizacion/unirse", auth.validarToken, organizacionController.unirseOrganizacion);
 router.get("/api/organizacion/:id/miembros", auth.validarToken, organizacionController.listarMiembros);
 router.patch("/api/organizacion/:id", auth.validarToken, organizacionController.editarOrganizacion);

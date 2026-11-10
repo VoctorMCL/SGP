@@ -16,6 +16,13 @@ export class OrganizacionService {
     );
   }
 
+  /** Todas las sedes creadas en el sistema (para el buscador global). */
+  todasOrganizaciones(): Observable<Organizacion[]> {
+    return this.http.get<{ message: string; organizaciones: Organizacion[] }>(`${environment.apiUrl}/organizacion/todas`).pipe(
+      map(res => res.organizaciones)
+    );
+  }
+
   crearOrganizacion(datos: Partial<Organizacion>): Observable<{ message: string; organizacion: Organizacion }> {
     return this.http.post<{ message: string; organizacion: Organizacion }>(`${environment.apiUrl}/organizacion`, datos);
   }

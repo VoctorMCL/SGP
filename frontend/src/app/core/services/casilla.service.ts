@@ -16,6 +16,13 @@ export class CasillaService {
     );
   }
 
+  /** Todas las casillas del sistema (para el buscador global). */
+  todasCasillas(): Observable<Casilla[]> {
+    return this.http.get<{ message: string; casillas: Casilla[] }>(`${environment.apiUrl}/casilla/todas`).pipe(
+      map(res => res.casillas)
+    );
+  }
+
   cambiarEstado(casillaId: string, estado: 'libre' | 'ocupado'): Observable<any> {
     return this.http.patch(`${environment.apiUrl}/casilla/${casillaId}/estado`, { estado });
   }

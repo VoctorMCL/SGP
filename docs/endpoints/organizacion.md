@@ -199,3 +199,31 @@ Edita los datos de la organización. Requiere estar autenticado.
 **401 Unauthorized**  
 **404 Not Found** - Organización not found  
 **500 Internal Server Error**
+
+## 6. Todas las Organizaciones (buscador global)
+
+Lista todas las sedes creadas en el sistema para el buscador global. No incluye `codigoInvitacion`.
+
+- **URL:** `GET /api/organizacion/todas`
+- **Auth:** Requiere token
+- **Content-Type:** N/A
+
+### Respuestas
+
+**200 OK**
+```json
+{
+  "message": "Organizaciones encontradas",
+  "organizaciones": [
+    {
+      "_id": "66f...",
+      "nombre": "Parqueadero Unilasallista",
+      "direccion": "Calle 123 #45-67",
+      "totalPuestos": 50
+    }
+  ]
+}
+```
+
+**401 Unauthorized**
+**500 Internal Server Error**

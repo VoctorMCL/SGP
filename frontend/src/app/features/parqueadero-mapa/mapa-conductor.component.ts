@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed, inject } from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, ViewChild, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -27,10 +27,6 @@ import { Casilla, Organizacion, Reserva } from '../../core/models';
           </svg>
           Todas mis sedes
         </a>
-        <span class="mono flex items-center gap-1.5 text-[0.52rem] uppercase tracking-[0.14em] text-mist">
-          <span class="live-dot scale-75"></span>
-          WebSocket · sincronización en vivo
-        </span>
       </div>
 
       <!-- Encabezado -->
@@ -186,7 +182,7 @@ import { Casilla, Organizacion, Reserva } from '../../core/models';
                   <button type="button" (click)="cambiarZoom(-0.1)" class="grid h-7 w-7 place-items-center text-mist transition-colors hover:bg-white/[0.04] hover:text-chalk">
                     <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M5 12h14"></path></svg>
                   </button>
-                  <span class="mono border-x border-edge px-2 text-[0.52rem] text-chalk">{{ zoomPorcentaje() }}%</span>
+                  <button type="button" (click)="ajustarAlRecuadro()" class="mono border-x border-edge px-2 text-[0.52rem] text-chalk transition-colors hover:bg-white/[0.04]" title="Ajustar al recuadro">{{ zoomPorcentaje() }}%</button>
                   <button type="button" (click)="cambiarZoom(0.1)" class="grid h-7 w-7 place-items-center text-mist transition-colors hover:bg-white/[0.04] hover:text-chalk">
                     <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 5v14M5 12h14"></path></svg>
                   </button>
@@ -198,9 +194,9 @@ import { Casilla, Organizacion, Reserva } from '../../core/models';
           </div>
 
           @if (vistaModo() === 'plano') {
-            <div class="relative h-[30rem] overflow-auto bg-[#06090e] sm:h-[36rem] xl:h-[39rem]">
-              <div class="min-h-full min-w-full p-4">
-                <div class="relative shrink-0" [style.width.px]="ANCHO * zoom()" [style.height.px]="ALTO * zoom()">
+            <div #marcoPlano class="relative aspect-[5/3] overflow-auto bg-[#06090e]">
+              <div class="flex min-h-full min-w-full">
+                <div class="relative m-auto shrink-0" [style.width.px]="ANCHO * zoom()" [style.height.px]="ALTO * zoom()">
                   <div
                     class="plan-surface absolute left-0 top-0 origin-top-left"
                     [style.width.px]="ANCHO"
@@ -505,6 +501,22 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
   readonly ANCHO = 1200;
   readonly ALTO = 720;
 
+  /** Marco visible del plano; se usa para calcular el zoom que lo hace encajar. */
+  private marcoPlanoEl: HTMLElement | null = null;
+  private observadorMarco?: ResizeObserver;
+  private zoomManual = false;
+
+  @ViewChild('marcoPlano')
+  set marcoPlano(ref: ElementRef<HTMLElement> | undefined) {
+    this.observadorMarco?.disconnect();
+    this.marcoPlanoEl = ref?.nativeElement ?? null;
+    if (!this.marcoPlanoEl) return;
+
+    this.observadorMarco = new ResizeObserver(() => this.ajustarZoomAlMarco());
+    this.observadorMarco.observe(this.marcoPlanoEl);
+    this.ajustarZoomAlMarco();
+  }
+
   organizacionId = signal<string>('');
   organizacion = signal<Organizacion | null>(null);
   casillas = signal<Casilla[]>([]);
@@ -604,6 +616,7 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.observadorMarco?.disconnect();
     if (this.organizacionId()) {
       this.socketService.salirOrganizacion(this.organizacionId());
     }
@@ -611,9 +624,12 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
   }
 
   cargarOrganizacion(id: string): void {
-    this.organizacionService.misOrganizaciones().subscribe((orgs) => {
-      const match = orgs.find((o) => o._id === id);
-      if (match) this.organizacion.set(match);
+    this.organizacionService.todasOrganizaciones().subscribe({
+      next: (orgs) => {
+        const match = orgs.find((o) => o._id === id);
+        if (match) this.organizacion.set(match);
+      },
+      error: (err) => console.error('Error al cargar la sede:', err)
     });
   }
 
@@ -697,7 +713,29 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
   }
 
   cambiarZoom(delta: number): void {
-    this.zoom.set(Math.max(0.4, Math.min(1.4, Number((this.zoom() + delta).toFixed(2)))));
+    this.zoomManual = true;
+    this.zoom.set(Math.max(0.15, Math.min(1.4, Number((this.zoom() + delta).toFixed(2)))));
+  }
+
+  /** Vuelve a encajar el plano completo dentro del recuadro visible. */
+  ajustarAlRecuadro(): void {
+    this.zoomManual = false;
+    this.ajustarZoomAlMarco();
+  }
+
+  private ajustarZoomAlMarco(): void {
+    if (this.zoomManual) return;
+
+    const marco = this.marcoPlanoEl;
+    if (!marco) return;
+
+    const ancho = marco.clientWidth;
+    const alto = marco.clientHeight;
+    if (!ancho || !alto) return;
+
+    // 1px de margen para evitar barras de desplazamiento por redondeo.
+    const ajuste = Math.min((ancho - 1) / this.ANCHO, (alto - 1) / this.ALTO);
+    this.zoom.set(Math.max(0.15, Math.min(1.4, Number(ajuste.toFixed(3)))));
   }
 
   tipoCorto(tipo: Casilla['tipo']): string {

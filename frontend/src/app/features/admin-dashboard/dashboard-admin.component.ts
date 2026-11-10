@@ -23,10 +23,6 @@ import { Casilla, Organizacion, AlertaReserva } from '../../core/models';
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-edge pb-3">
         <span class="kicker">Consola / Operación</span>
         <div class="flex flex-wrap items-center gap-4 text-[0.6rem] text-mist">
-          <span class="flex items-center gap-1.5">
-            <span class="live-dot scale-75"></span>
-            WebSocket · sincronización en vivo
-          </span>
           <span class="mono hidden uppercase tracking-[0.14em] text-mist/40 sm:inline">{{ hoy }}</span>
         </div>
       </div>
