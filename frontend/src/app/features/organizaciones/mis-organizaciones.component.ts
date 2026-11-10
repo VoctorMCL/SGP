@@ -25,7 +25,7 @@ import { Organizacion } from '../../core/models';
 
       <div class="mt-8 grid items-end gap-6 lg:grid-cols-[1fr_auto]">
         <div class="rise">
-          <h1 class="max-w-2xl text-[2.5rem] font-semibold leading-[0.96] tracking-[-0.045em] text-chalk sm:text-5xl">
+          <h1 class="max-w-2xl break-words text-[2.25rem] font-semibold leading-[0.96] tracking-[-0.045em] text-chalk sm:text-5xl">
             Tus sedes,<br class="sm:hidden" />
             <span class="text-outline">en un solo plano.</span>
           </h1>
@@ -34,7 +34,7 @@ import { Organizacion } from '../../core/models';
           </p>
         </div>
 
-        <div class="rise-2 flex items-stretch gap-2.5">
+        <div class="rise-2 flex flex-wrap items-stretch gap-2.5">
           <div class="panel-flat relative flex min-w-[8.5rem] flex-col justify-between overflow-hidden px-4 py-3.5">
             <span class="mono text-[0.52rem] uppercase tracking-[0.18em] text-mist">Sedes vinculadas</span>
             <div class="mt-2 flex items-end gap-2">
@@ -57,16 +57,16 @@ import { Organizacion } from '../../core/models';
 
       <!-- Métricas -->
       @if (!cargando() && organizaciones().length > 0) {
-        <div class="rise-3 mt-8 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        <div class="rise-3 mt-8 grid grid-cols-2 gap-2.5 max-[359px]:grid-cols-1 sm:grid-cols-4">
           <div class="panel-flat flex items-center gap-3 px-4 py-3">
             <span class="grid h-8 w-8 place-items-center rounded-md border border-flow/25 bg-flow/[0.07] text-flow">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 21V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v16M17 21h3M9 7h3M9 11h3M9 21v-5h3v5"></path>
               </svg>
             </span>
-            <div>
+            <div class="min-w-0">
               <div class="mono text-[0.5rem] uppercase tracking-[0.16em] text-mist">Puestos totales</div>
-              <div class="text-lg font-semibold leading-tight text-chalk">{{ totalPuestos() }}</div>
+              <div class="break-words text-lg font-semibold leading-tight text-chalk">{{ totalPuestos() }}</div>
             </div>
           </div>
 
@@ -76,9 +76,9 @@ import { Organizacion } from '../../core/models';
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 12h4l2.5-7 4 14 2.5-7h5"></path>
               </svg>
             </span>
-            <div>
+            <div class="min-w-0">
               <div class="mono text-[0.5rem] uppercase tracking-[0.16em] text-mist">Operación</div>
-              <div class="text-lg font-semibold leading-tight text-chalk">Tiempo real</div>
+              <div class="break-words text-lg font-semibold leading-tight text-chalk">Tiempo real</div>
             </div>
           </div>
 
@@ -88,9 +88,9 @@ import { Organizacion } from '../../core/models';
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 3 5 6v5c0 4.4 2.9 8.3 7 9.5 4.1-1.2 7-5.1 7-9.5V6l-7-3Z"></path>
               </svg>
             </span>
-            <div>
+            <div class="min-w-0">
               <div class="mono text-[0.5rem] uppercase tracking-[0.16em] text-mist">Acceso</div>
-              <div class="text-lg font-semibold leading-tight text-chalk">Privado</div>
+              <div class="break-words text-lg font-semibold leading-tight text-chalk">Privado</div>
             </div>
           </div>
 
@@ -100,9 +100,9 @@ import { Organizacion } from '../../core/models';
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7h16M4 12h10M4 17h7"></path>
               </svg>
             </span>
-            <div>
+            <div class="min-w-0">
               <div class="mono text-[0.5rem] uppercase tracking-[0.16em] text-mist">Rol</div>
-              <div class="text-lg font-semibold capitalize leading-tight text-chalk">{{ authService.userRole() }}</div>
+              <div class="break-words text-lg font-semibold capitalize leading-tight text-chalk">{{ authService.userRole() }}</div>
             </div>
           </div>
         </div>
@@ -218,7 +218,7 @@ import { Organizacion } from '../../core/models';
                   <p class="mt-3 line-clamp-2 text-[0.68rem] leading-relaxed text-mist/80">{{ org.descripcion }}</p>
                 }
 
-                <div class="mt-auto flex items-center gap-2 pt-5">
+                <div class="mt-auto flex flex-wrap items-center gap-2 pt-5">
                   @if (authService.userRole() === 'administrador') {
                     <a
                       [routerLink]="['/organizaciones', org._id, 'disenador']"

@@ -35,7 +35,7 @@ import { CasillaService } from '../../core/services/casilla.service';
         </div>
 
         <!-- Pasos -->
-        <div class="rise-2 flex items-center gap-1.5 text-[0.6rem]">
+        <div class="rise-2 flex flex-wrap items-center gap-1.5 text-[0.6rem]">
           <span class="flex items-center gap-2 rounded-md border border-signal/25 bg-signal/[0.06] px-2.5 py-2 text-signal">
             <span class="mono">01</span> Identidad
           </span>

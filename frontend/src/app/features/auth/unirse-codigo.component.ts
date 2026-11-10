@@ -23,7 +23,7 @@ import { OrganizacionService } from '../../core/services/organizacion.service';
       <div class="mt-7 grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
         <!-- Formulario -->
         <section class="panel notch rise lg:col-span-7">
-          <div class="flex items-center justify-between border-b border-edge px-6 py-3.5 sm:px-8">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-edge px-6 py-3.5 sm:px-8">
             <span class="mono text-[0.58rem] uppercase tracking-[0.2em] text-mist">Invitación / Canje</span>
             <span class="tag tag-signal"><span class="live-dot scale-75"></span> Validación en vivo</span>
           </div>

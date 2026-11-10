@@ -84,7 +84,7 @@ import { Casilla, Organizacion, Reserva } from '../../core/models';
       <section class="panel mt-5 p-3">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex flex-1 flex-wrap items-center gap-2">
-            <div class="relative min-w-[13rem] flex-1 sm:max-w-xs">
+            <div class="relative w-full min-w-0 flex-1 sm:min-w-[13rem] sm:max-w-xs">
               <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 text-mist/60">
                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <circle cx="11" cy="11" r="7" stroke-width="1.8"></circle>
@@ -100,7 +100,7 @@ import { Casilla, Organizacion, Reserva } from '../../core/models';
               />
             </div>
 
-            <div class="flex items-center gap-1 rounded-md border border-edge p-0.5">
+            <div class="flex flex-wrap items-center gap-1 rounded-md border border-edge p-0.5">
               <button
                 type="button"
                 (click)="filtroTipo.set('todos')"

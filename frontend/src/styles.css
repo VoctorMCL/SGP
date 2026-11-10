@@ -2,7 +2,7 @@
 
 @theme {
   --font-sans: "Nunito", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-mono: "Nunito", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   --color-void: #05070b;
   --color-carbon: #090c12;
@@ -1001,6 +1001,91 @@ kbd.node-key {
   font-family: var(--font-mono);
   font-size: 0.52rem;
   color: #aeb8c9;
+}
+
+/* ── Escala tipográfica de pantallas internas ────────────────────
+   Tras iniciar sesión se usa una base de 20px. Las etiquetas más
+   pequeñas del diseño se elevan para que sean legibles sin perder
+   la densidad de los tableros. */
+.app-autenticado,
+.app-autenticado button,
+.app-autenticado input,
+.app-autenticado select,
+.app-autenticado textarea {
+  font-family: var(--font-sans);
+}
+
+.app-autenticado [class*="text-[0.4rem]"],
+.app-autenticado [class*="text-[0.42rem]"],
+.app-autenticado [class*="text-[0.45rem]"],
+.app-autenticado [class*="text-[0.46rem]"],
+.app-autenticado [class*="text-[0.48rem]"],
+.app-autenticado [class*="text-[0.5rem]"] {
+  font-size: 0.7rem;
+}
+
+.app-autenticado [class*="text-[0.52rem]"],
+.app-autenticado [class*="text-[0.54rem]"],
+.app-autenticado [class*="text-[0.55rem]"],
+.app-autenticado [class*="text-[0.58rem]"] {
+  font-size: 0.74rem;
+}
+
+.app-autenticado [class*="text-[0.6rem]"],
+.app-autenticado [class*="text-[0.62rem]"],
+.app-autenticado [class*="text-[0.64rem]"],
+.app-autenticado [class*="text-[0.65rem]"],
+.app-autenticado [class*="text-[0.66rem]"] {
+  font-size: 0.78rem;
+}
+
+.app-autenticado [class*="text-[0.68rem]"],
+.app-autenticado [class*="text-[0.7rem]"],
+.app-autenticado [class*="text-[0.72rem]"],
+.app-autenticado [class*="text-[0.8rem]"] {
+  font-size: 0.84rem;
+}
+
+.app-autenticado .kicker,
+.app-autenticado .label,
+.app-autenticado .chip,
+.app-autenticado .tag,
+.app-autenticado .section-num,
+.app-autenticado .tool-btn {
+  font-size: 0.72rem;
+}
+
+.app-autenticado .tag {
+  max-width: 100%;
+  white-space: normal;
+}
+
+.app-autenticado .btn {
+  font-size: 0.82rem;
+}
+
+.app-autenticado .field {
+  font-size: 0.88rem;
+}
+
+.app-autenticado .section-title {
+  font-size: 0.78rem;
+}
+
+.app-autenticado .checkbox-tile {
+  font-size: 0.82rem;
+}
+
+.app-autenticado .bay-code {
+  font-size: 0.82rem;
+}
+
+.app-autenticado .bay-meta {
+  font-size: 0.6rem;
+}
+
+.app-autenticado kbd.node-key {
+  font-size: 0.62rem;
 }
 
 /* Leaflet en tema oscuro */

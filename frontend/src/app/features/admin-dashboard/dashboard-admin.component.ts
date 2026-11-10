@@ -184,9 +184,9 @@ import { Casilla, Organizacion, AlertaReserva } from '../../core/models';
       </div>
 
       <!-- Contenido principal -->
-      <div class="mt-4 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <div class="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <!-- Plano / listado -->
-        <section class="panel overflow-hidden">
+        <section class="panel min-w-0 overflow-hidden">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-edge px-4 py-2.5">
             <div class="flex items-center gap-2">
               <span class="mono text-[0.54rem] uppercase tracking-[0.16em] text-chalk">

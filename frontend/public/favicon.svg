@@ -1,11 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <!-- Fondo tipo "notch-sm": esquina superior derecha cortada -->
-  <path d="M0 0h50l14 14v50H0z" fill="#cbd5e1"/>
-  <!-- P oscura, igual que el logo del login -->
-  <g transform="translate(16 16) scale(1.3333)" stroke="#05070b" stroke-width="2.4" stroke-linecap="square" fill="none">
-    <path d="M7.5 18V6h5.2a3.6 3.6 0 1 1 0 7.2H8.4"/>
-    <path d="M7.5 13.2h5.2"/>
-  </g>
-  <!-- Punto azul de la esquina inferior derecha -->
-  <rect x="52" y="52" width="12" height="12" fill="#5d8bff"/>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#0c101b" stroke="#2b3648" stroke-width="2"/>
+  <line x1="10" y1="13" x2="10" y2="51" stroke="#475569" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="54" y1="13" x2="54" y2="51" stroke="#475569" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M21 49V15h13a11 11 0 0 1 0 22H21" fill="none" stroke="#f1f5f9" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="49" cy="49" r="5.5" fill="#5d8bff" fill-opacity="0.28"/>
+  <circle cx="49" cy="49" r="3.2" fill="#5d8bff"/>
 </svg>
