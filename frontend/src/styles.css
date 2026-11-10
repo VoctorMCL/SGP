@@ -607,6 +607,19 @@
     opacity: 0.72;
   }
 
+  /*
+   * El mapa se renderiza al 200% y se reduce al 50% con transform.
+   * Al quedar dentro del lienzo (que también se escala), conserva la misma
+   * escala que las casillas pero con el doble de resolución, evitando que
+   * se vea borroso al hacer zoom.
+   */
+  .plan-satelite-mapa {
+    width: 200%;
+    height: 200%;
+    transform: scale(0.5);
+    transform-origin: top left;
+  }
+
   .plan-satelite .leaflet-container {
     background: transparent;
   }

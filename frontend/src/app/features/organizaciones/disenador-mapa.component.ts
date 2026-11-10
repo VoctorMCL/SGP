@@ -309,7 +309,7 @@ interface Feedback {
                   <!-- Capa satelital de fondo (debajo de la cuadrícula y los elementos) -->
                   @if (satelite()) {
                     <div class="plan-satelite" [class.plan-satelite--interactivo]="moverSatelite()">
-                      <div id="mapa-satelite-plano" class="h-full w-full"></div>
+                      <div id="mapa-satelite-plano" class="plan-satelite-mapa"></div>
                     </div>
                   }
 
@@ -490,8 +490,8 @@ interface Feedback {
 
                 <span class="mx-0.5 h-4 w-px bg-edge"></span>
 
-                <button type="button" (click)="zoomSatelite(1)" class="grid h-7 w-7 place-items-center rounded text-mist transition-colors hover:bg-white/[0.06] hover:text-chalk" title="Acercar satélite">+</button>
-                <button type="button" (click)="zoomSatelite(-1)" class="grid h-7 w-7 place-items-center rounded text-mist transition-colors hover:bg-white/[0.06] hover:text-chalk" title="Alejar satélite">−</button>
+                <button type="button" (click)="zoomSatelite(1)" class="grid h-7 w-7 place-items-center rounded text-mist transition-colors hover:bg-white/[0.06] hover:text-chalk" title="Acercar (satélite y plano)">+</button>
+                <button type="button" (click)="zoomSatelite(-1)" class="grid h-7 w-7 place-items-center rounded text-mist transition-colors hover:bg-white/[0.06] hover:text-chalk" title="Alejar (satélite y plano)">−</button>
 
                 <span class="mx-0.5 h-4 w-px bg-edge"></span>
 
@@ -699,6 +699,12 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
 
   readonly ANCHO = 1200;
   readonly ALTO = 720;
+  /**
+   * El satélite se dibuja al doble de resolución y se contrapica al 50%.
+   * Así se mantiene nítido cuando el lienzo se escala (40%–150%) sin
+   * alterar su escala real respecto a las casillas.
+   */
+  private readonly ZOOM_SATELITE = 19;
 
   organizacionId = signal<string>('');
   organizacion = signal<Organizacion | null>(null);
@@ -881,15 +887,15 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
   }
 
   zoomSatelite(delta: number): void {
-    const mapa = this.mapaSatelite;
-    if (!mapa) return;
-    mapa.setZoom(mapa.getZoom() + delta);
+    // El zoom mueve todo el lienzo para no perder la escala entre el
+    // satélite y las casillas. El mapa en sí mantiene su zoom de render.
+    this.cambiarZoom(delta * 0.1);
   }
 
   centrarSateliteEnPin(): void {
     const org = this.organizacion();
     if (typeof org?.latitud === 'number' && typeof org?.longitud === 'number') {
-      this.mapaSatelite?.setView([org.latitud, org.longitud], 18);
+      this.mapaSatelite?.setView([org.latitud, org.longitud], this.ZOOM_SATELITE);
       this.marcadorSatelite?.setLatLng([org.latitud, org.longitud]);
       return;
     }
@@ -957,7 +963,7 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
       boxZoom: false,
       keyboard: false,
       touchZoom: false
-    }).setView([lat, lng], 18);
+    }).setView([lat, lng], this.ZOOM_SATELITE);
 
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 19,
@@ -965,9 +971,9 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
     }).addTo(this.mapaSatelite);
 
     this.marcadorSatelite = L.circleMarker([lat, lng], {
-      radius: 7,
+      radius: 14,
       color: '#ffffff',
-      weight: 2,
+      weight: 4,
       fillColor: '#5d8bff',
       fillOpacity: 0.95
     }).addTo(this.mapaSatelite);
@@ -987,14 +993,8 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
 
     if (this.moverSatelite()) {
       mapa.dragging.enable();
-      mapa.scrollWheelZoom.enable();
-      mapa.doubleClickZoom.enable();
-      mapa.touchZoom.enable();
     } else {
       mapa.dragging.disable();
-      mapa.scrollWheelZoom.disable();
-      mapa.doubleClickZoom.disable();
-      mapa.touchZoom.disable();
     }
   }
 
@@ -1004,7 +1004,7 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
 
     if (typeof org.latitud === 'number' && typeof org.longitud === 'number') {
       this.sateliteTienePin.set(true);
-      this.mapaSatelite.setView([org.latitud, org.longitud], 18);
+      this.mapaSatelite.setView([org.latitud, org.longitud], this.ZOOM_SATELITE);
       this.marcadorSatelite?.setLatLng([org.latitud, org.longitud]);
       return;
     }
@@ -1026,7 +1026,7 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
         const lng = Number.parseFloat(lista[0].lon);
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-        this.mapaSatelite.setView([lat, lng], 18);
+        this.mapaSatelite.setView([lat, lng], this.ZOOM_SATELITE);
         this.marcadorSatelite?.setLatLng([lat, lng]);
       })
       .catch(() => {});
