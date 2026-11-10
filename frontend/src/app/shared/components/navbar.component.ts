@@ -42,13 +42,15 @@ type Resultado =
             >
               Mis sedes
             </a>
-            <a
-              routerLink="/unirse"
-              routerLinkActive="text-chalk bg-white/[0.045]"
-              class="rounded-md px-3 py-2 text-[0.72rem] font-medium text-mist transition-colors hover:bg-white/[0.035] hover:text-chalk"
-            >
-              Unirse con código
-            </a>
+            @if (authService.currentUser()?.rol !== 'administrador') {
+              <a
+                routerLink="/unirse"
+                routerLinkActive="text-chalk bg-white/[0.045]"
+                class="rounded-md px-3 py-2 text-[0.72rem] font-medium text-mist transition-colors hover:bg-white/[0.035] hover:text-chalk"
+              >
+                Unirse con código
+              </a>
+            }
             @if (authService.currentUser()?.rol === 'administrador' || authService.currentUser()?.rol === 'guardia') {
               <a
                 routerLink="/admin"
@@ -150,10 +152,6 @@ type Resultado =
                     </ul>
                   }
 
-                  <div class="flex items-center justify-between border-t border-edge px-3 py-1.5">
-                    <span class="mono text-[0.45rem] uppercase tracking-[0.12em] text-mist/50">↑ ↓ navegar · Enter abrir · Esc cerrar</span>
-                    <span class="mono text-[0.45rem] uppercase tracking-[0.12em] text-mist/50">/ enfocar</span>
-                  </div>
                 </div>
               }
             </div>
@@ -204,17 +202,19 @@ type Resultado =
                         Mis sedes
                       </a>
 
-                      <a
-                        routerLink="/unirse"
-                        (click)="menuAbierto.set(false)"
-                        routerLinkActive="bg-white/[0.05] text-chalk"
-                        class="flex items-center gap-2.5 rounded px-2.5 py-2 text-[0.7rem] font-medium text-mist transition-colors hover:bg-white/[0.04] hover:text-chalk"
-                      >
-                        <svg class="h-3.5 w-3.5 text-mist" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 7a2 2 0 0 1 2 2m4 0a6 6 0 0 1-7.7 5.7L11 17H9v2H7v2H4a1 1 0 0 1-1-1v-2.6a1 1 0 0 1 .3-.7l6-6A6 6 0 1 1 21 9Z"></path>
-                        </svg>
-                        Unirse con código
-                      </a>
+                      @if (user.rol !== 'administrador') {
+                        <a
+                          routerLink="/unirse"
+                          (click)="menuAbierto.set(false)"
+                          routerLinkActive="bg-white/[0.05] text-chalk"
+                          class="flex items-center gap-2.5 rounded px-2.5 py-2 text-[0.7rem] font-medium text-mist transition-colors hover:bg-white/[0.04] hover:text-chalk"
+                        >
+                          <svg class="h-3.5 w-3.5 text-mist" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 7a2 2 0 0 1 2 2m4 0a6 6 0 0 1-7.7 5.7L11 17H9v2H7v2H4a1 1 0 0 1-1-1v-2.6a1 1 0 0 1 .3-.7l6-6A6 6 0 1 1 21 9Z"></path>
+                          </svg>
+                          Unirse con código
+                        </a>
+                      }
 
                       @if (user.rol === 'administrador' || user.rol === 'guardia') {
                         <a

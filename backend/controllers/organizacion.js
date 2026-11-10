@@ -158,6 +158,10 @@ function unirseOrganizacion(req, resp) {
     let requestBody = req.body || {};
     let codigoInvitacion = requestBody.codigoInvitacion;
 
+    if (req.usuario.rol === 'administrador') {
+        return resp.status(403).send({ "message": "Las cuentas de administrador solo pueden administrar las sedes que crean" });
+    }
+
     if (!codigoInvitacion || !validacion.texto(codigoInvitacion)) {
         return resp.status(400).send({ "message": "Debe enviar el codigoInvitacion" });
     }

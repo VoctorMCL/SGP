@@ -29,7 +29,11 @@ import { Organizacion } from '../../core/models';
             <span class="text-outline">en un solo plano.</span>
           </h1>
           <p class="mt-4 max-w-xl text-[0.8rem] leading-relaxed text-mist">
-            Elige una sede para ver el estado del parqueadero, reservar tu puesto o entrar al editor de planos si eres administrador.
+            @if (authService.userRole() === 'administrador') {
+              Administra tus sedes, revisa la ocupación y entra al editor de planos.
+            } @else {
+              Elige una sede para ver el estado del parqueadero y reservar tu puesto.
+            }
           </p>
         </div>
 
@@ -134,16 +138,23 @@ import { Organizacion } from '../../core/models';
             </div>
           </div>
           <div class="p-8 text-center">
-            <h2 class="text-xl font-semibold tracking-tight text-chalk">Todavía no tienes sedes</h2>
-            <p class="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-mist">
-              Únete con un código de invitación o crea tu primera sede si eres administrador.
-            </p>
-            <div class="mt-6 flex flex-wrap justify-center gap-2.5">
-              <a routerLink="/unirse" class="btn btn-signal">Ingresar código</a>
-              @if (authService.userRole() === 'administrador') {
-                <a routerLink="/organizaciones/crear" class="btn btn-ghost">Crear sede</a>
-              }
-            </div>
+            @if (authService.userRole() === 'administrador') {
+              <h2 class="text-xl font-semibold tracking-tight text-chalk">Todavía no has creado sedes</h2>
+              <p class="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-mist">
+                Crea tu primera sede para empezar a administrar la ocupación y el plano del parqueadero.
+              </p>
+              <div class="mt-6 flex flex-wrap justify-center gap-2.5">
+                <a routerLink="/organizaciones/crear" class="btn btn-signal">Crear sede</a>
+              </div>
+            } @else {
+              <h2 class="text-xl font-semibold tracking-tight text-chalk">Todavía no tienes sedes</h2>
+              <p class="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-mist">
+                Únete con un código de invitación para acceder a tu parqueadero.
+              </p>
+              <div class="mt-6 flex flex-wrap justify-center gap-2.5">
+                <a routerLink="/unirse" class="btn btn-signal">Ingresar código</a>
+              </div>
+            }
           </div>
         </div>
       }
@@ -246,25 +257,27 @@ import { Organizacion } from '../../core/models';
         </div>
 
         <!-- Banner unirse -->
-        <div class="panel-rail mt-8 flex flex-col items-center justify-between gap-4 overflow-hidden p-5 sm:flex-row sm:p-6">
-          <div class="flex items-center gap-4 text-center sm:text-left">
-            <span class="notch-sm hidden h-11 w-11 shrink-0 place-items-center border border-flow/25 bg-flow/[0.08] text-flow sm:grid">
-              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 7a2 2 0 0 1 2 2m4 0a6 6 0 0 1-7.7 5.7L11 17H9v2H7v2H4a1 1 0 0 1-1-1v-2.6a1 1 0 0 1 .3-.7l6-6A6 6 0 1 1 21 9Z"></path>
-              </svg>
-            </span>
-            <div>
-              <h3 class="text-sm font-semibold text-chalk">¿Tienes un nuevo código de organización?</h3>
-              <p class="mt-0.5 text-[0.7rem] text-mist">Vincula tu cuenta y sincroniza tu acceso vehicular en segundos.</p>
+        @if (authService.userRole() !== 'administrador') {
+          <div class="panel-rail mt-8 flex flex-col items-center justify-between gap-4 overflow-hidden p-5 sm:flex-row sm:p-6">
+            <div class="flex items-center gap-4 text-center sm:text-left">
+              <span class="notch-sm hidden h-11 w-11 shrink-0 place-items-center border border-flow/25 bg-flow/[0.08] text-flow sm:grid">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 7a2 2 0 0 1 2 2m4 0a6 6 0 0 1-7.7 5.7L11 17H9v2H7v2H4a1 1 0 0 1-1-1v-2.6a1 1 0 0 1 .3-.7l6-6A6 6 0 1 1 21 9Z"></path>
+                </svg>
+              </span>
+              <div>
+                <h3 class="text-sm font-semibold text-chalk">¿Tienes un nuevo código de organización?</h3>
+                <p class="mt-0.5 text-[0.7rem] text-mist">Vincula tu cuenta y sincroniza tu acceso vehicular en segundos.</p>
+              </div>
             </div>
+            <a routerLink="/unirse" class="btn btn-ghost shrink-0 border-flow/25 text-flow hover:border-flow/50 hover:text-chalk">
+              Ingresar código
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-5-5 5 5-5 5"></path>
+              </svg>
+            </a>
           </div>
-          <a routerLink="/unirse" class="btn btn-ghost shrink-0 border-flow/25 text-flow hover:border-flow/50 hover:text-chalk">
-            Ingresar código
-            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-5-5 5 5-5 5"></path>
-            </svg>
-          </a>
-        </div>
+        }
       }
 
       <!-- Nota -->

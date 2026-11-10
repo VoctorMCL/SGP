@@ -399,6 +399,33 @@ import { Casilla, Organizacion, Reserva } from '../../core/models';
                   </div>
                 }
 
+                @if (esPuesto(sel) && puedeEditarEstado() && !miReservaEnCasilla(sel)) {
+                  <div class="mt-4 space-y-2.5 border-t border-edge pt-4">
+                    <h3 class="mono text-[0.52rem] uppercase tracking-[0.16em] text-mist">Acciones de operación</h3>
+                    <p class="text-[0.62rem] leading-relaxed text-mist">
+                      Puedes cambiar la ocupación de este puesto sin salir del mapa.
+                    </p>
+                    <button
+                      type="button"
+                      (click)="alternarEstadoCasilla(sel)"
+                      [disabled]="cargandoAccion()"
+                      class="btn h-9 w-full"
+                      [ngClass]="sel.estado === 'libre'
+                        ? 'btn-danger'
+                        : 'btn-ghost border-ok/30 text-ok hover:border-ok/60 hover:text-chalk'"
+                    >
+                      @if (cargandoAccion()) {
+                        <span class="h-4 w-4 animate-spin rounded-full border-2 border-chalk/25 border-t-chalk"></span>
+                        <span>Procesando…</span>
+                      } @else if (sel.estado === 'libre') {
+                        <span>Marcar como ocupado</span>
+                      } @else {
+                        <span>Marcar como libre</span>
+                      }
+                    </button>
+                  </div>
+                }
+
                 @if (esPuesto(sel) && sel.estado === 'libre' && !miReservaActiva()) {
                   <div class="mt-4 space-y-3 border-t border-edge pt-4">
                     <h3 class="mono text-[0.52rem] uppercase tracking-[0.16em] text-mist">Reservar este puesto</h3>
@@ -550,6 +577,8 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
   casillas = signal<Casilla[]>([]);
   misReservas = signal<Reserva[]>([]);
   casillaSeleccionada = signal<Casilla | null>(null);
+  /** Sedes a las que pertenece el usuario, usadas para habilitar la operación del mapa. */
+  sedesOperables = signal<Organizacion[]>([]);
 
   busqueda = signal<string>('');
   filtroTipo = signal<'todos' | 'libre' | 'discapacitados' | 'electrico'>('todos');
@@ -583,6 +612,14 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
       const cId = typeof r.casilla === 'object' ? r.casilla?._id : r.casilla;
       return ids.has(cId);
     });
+  });
+
+  /** Guardias y administradores pueden operar los puestos de las sedes a las que pertenecen. */
+  puedeEditarEstado = computed(() => {
+    const rol = this.authService.userRole();
+    if (rol !== 'guardia' && rol !== 'administrador') return false;
+    const orgId = this.organizacionId();
+    return !!orgId && this.sedesOperables().some((org) => org?._id === orgId);
   });
 
   casillasFiltradas = computed(() => {
@@ -626,6 +663,7 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
       this.cargarOrganizacion(orgId);
       this.cargarCasillas();
       this.cargarMisReservas();
+      this.cargarSedesOperables();
 
       this.socketService.unirseOrganizacion(orgId);
 
@@ -692,6 +730,14 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
     this.reservaService.misReservas().subscribe({
       next: (data) => this.misReservas.set(data.filter((r) => r.estado === 'activa')),
       error: (err) => console.error('Error al cargar reservas:', err)
+    });
+  }
+
+  /** Carga las sedes del usuario para saber si puede operar los puestos del mapa. */
+  cargarSedesOperables(): void {
+    this.organizacionService.misOrganizaciones().subscribe({
+      next: (data) => this.sedesOperables.set(data || []),
+      error: (err) => console.error('Error al cargar mis sedes:', err)
     });
   }
 
@@ -767,6 +813,31 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.cargandoAccion.set(false);
         this.mensajeAccion.set(err.error?.message || 'Error al finalizar reserva.');
+      }
+    });
+  }
+
+  /** Marca o libera un puesto desde el mapa, igual que en el panel de control. */
+  alternarEstadoCasilla(casilla: Casilla): void {
+    if (this.cargandoAccion() || !this.puedeEditarEstado()) return;
+
+    const nuevoEstado: 'libre' | 'ocupado' = casilla.estado === 'libre' ? 'ocupado' : 'libre';
+    this.cargandoAccion.set(true);
+    this.mensajeAccion.set(null);
+
+    // Actualización optimista: el socket confirma el estado final.
+    this.casillas.update((lista) => lista.map((c) => (c._id === casilla._id ? { ...c, estado: nuevoEstado } : c)));
+    this.casillaSeleccionada.update((actual) => (actual?._id === casilla._id ? { ...actual, estado: nuevoEstado } : actual));
+
+    this.casillaService.cambiarEstado(casilla._id, nuevoEstado).subscribe({
+      next: () => {
+        this.cargandoAccion.set(false);
+        this.mensajeAccion.set(`Puesto ${casilla.codigo} marcado como ${nuevoEstado}.`);
+      },
+      error: (err) => {
+        this.cargandoAccion.set(false);
+        this.mensajeAccion.set(err.error?.message || `No se pudo cambiar el estado de ${casilla.codigo}.`);
+        this.cargarCasillas();
       }
     });
   }

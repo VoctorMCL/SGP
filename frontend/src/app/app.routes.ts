@@ -11,7 +11,7 @@ import { authGuard, roleGuard } from './core/guards/auth.guard';
 export const routes: Routes = [
   { path: '', redirectTo: 'organizaciones', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
-  { path: 'unirse', component: UnirseCodigoComponent, canActivate: [authGuard] },
+  { path: 'unirse', component: UnirseCodigoComponent, canActivate: [authGuard, roleGuard(['usuario', 'guardia'])] },
   { path: 'organizaciones', component: MisOrganizacionesComponent, canActivate: [authGuard] },
   {
     path: 'organizaciones/crear',

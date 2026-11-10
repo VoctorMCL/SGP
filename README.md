@@ -6,7 +6,53 @@ Aplicación **Fullstack unificada (MEAN + Tailwind + Capacitor)**. Un solo proye
 
 ---
 
+## Tecnologías Utilizadas
+
+| Tecnología | Versión | Capa | Uso en el proyecto |
+| --- | --- | --- | --- |
+| **Node.js** | 18+ (recomendado 20+) | Runtime | Ejecuta el backend y las herramientas de build |
+| **npm** | 10+ | Herramientas | Gestión de dependencias y scripts |
+| **Git** | — | Herramientas | Control de versiones del código |
+| **TypeScript** | ~6.0.2 | Lenguaje | Tipado estático del frontend y la configuración |
+| **Angular** | ^22.2.0 | Frontend | Framework SPA con componentes standalone, rutas y formularios |
+| **Angular CLI / Angular Build** | ^22.2.5 | Frontend | Compilación, empaquetado y servidor de desarrollo |
+| **RxJS** | ~7.8.0 | Frontend | Programación reactiva y manejo de observables |
+| **tslib** | ^2.3.0 | Frontend | Utilidades de soporte para el código compilado por TypeScript |
+| **Tailwind CSS** | ^4.3.3 | Estilos | Utilidades CSS, tema visual y diseño responsive |
+| **PostCSS** | ^8.5.3 | Estilos | Procesamiento de CSS para Tailwind |
+| **@tailwindcss/postcss** | ^4.3.3 | Estilos | Integración oficial de Tailwind CSS v4 con PostCSS |
+| **Google Fonts (Nunito)** | — | Estilos | Tipografía de la interfaz |
+| **HTML5 / CSS3** | — | Frontend | Estructura y estilos base de la aplicación web |
+| **Leaflet** | ^1.9.4 | Mapas | Mapas interactivos para ubicar sedes y diseñar planos |
+| **OpenStreetMap** | — | Mapas | Tiles del mapa y servicio de geocodificación |
+| **Nominatim** | — | Mapas | Búsqueda y geocodificación inversa de direcciones |
+| **Google Maps Tiles** | — | Mapas | Imágenes satelitales en el diseñador de planos |
+| **Socket.io Client** | ^4.8.4 | Tiempo real | Recepción de eventos de casillas y reservas en vivo |
+| **Capacitor Core** | ^8.5.3 | Móvil | Puente entre la app web y las APIs nativas |
+| **Capacitor Android** | ^8.6.0 | Móvil | Empaquetado y ejecución de la app en Android |
+| **Capacitor CLI** | ^8.6.0 | Móvil | Sincronización y apertura del proyecto Android |
+| **Android Studio** | — | Móvil | Compilación, emulación y pruebas de la app Android |
+| **Express** | ^5.2.1 | Backend | Servidor HTTP y API REST |
+| **body-parser** | ^2.3.0 | Backend | Parseo de cuerpos JSON y URL-encoded |
+| **CORS** | ^2.8.6 | Backend | Control de acceso entre orígenes |
+| **dotenv** | ^18.0.9 | Configuración | Carga de variables de entorno desde `.env` |
+| **MongoDB** | Local o Atlas | Base de datos | Persistencia NoSQL de usuarios, sedes, casillas y reservas |
+| **Mongoose** | ^9.10.4 | Base de datos | Esquemas, modelos, validaciones y consultas a MongoDB |
+| **bcrypt** | ^6.0.0 | Seguridad | Hash seguro de contraseñas |
+| **JWT (jwt-simple)** | ^0.5.6 | Seguridad | Autenticación mediante tokens firmados |
+| **Socket.io** | ^4.8.4 | Tiempo real | Servidor WebSocket para emitir cambios en tiempo real |
+| **Moment.js** | ^2.31.0 | Fechas | Formateo y cálculos de fechas |
+| **moment-timezone** | ^0.6.5 | Fechas | Manejo de zonas horarias |
+| **tz-lookup** | ^6.1.25 | Fechas | Deducción de zona horaria a partir de coordenadas |
+| **Vercel Analytics** | ^2.0.1 | Despliegue | Métricas de uso en producción |
+| **Vercel Speed Insights** | ^2.1.0 | Despliegue | Métricas de rendimiento web |
+| **Vercel** | — | Despliegue | Plataforma serverless para el entry point `api/index.js` |
+| **Postman** | — | Pruebas | Verificación manual de los endpoints REST |
+
+---
+
 ## Índice
+- [Tecnologías Utilizadas](#tecnologías-utilizadas)
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [Requisitos](#requisitos)
 - [Instalación](#instalación)
@@ -255,7 +301,7 @@ Content-Type: application/json
 | `POST` | `/api/organizacion` | Token + administrador | Crea una sede |
 | `GET` | `/api/organizacion` | Token | Lista las sedes a las que pertenece el usuario |
 | `GET` | `/api/organizacion/todas` | Token | Lista todas las sedes del sistema |
-| `POST` | `/api/organizacion/unirse` | Token | Une al usuario a una sede por código de invitación |
+| `POST` | `/api/organizacion/unirse` | Token (no administrador) | Une al usuario a una sede por código de invitación |
 | `GET` | `/api/organizacion/:id/miembros` | Token + miembro/creador | Lista los miembros de una sede |
 | `PATCH` | `/api/organizacion/:id` | Token + creador | Edita una sede |
 | `POST` | `/api/casilla` | Token + administrador | Crea un puesto, entrada, salida o carril |
@@ -569,7 +615,7 @@ Authorization: Bearer <TOKEN>
 
 #### `POST /api/organizacion/unirse`
 
-Une al usuario autenticado a una sede mediante su código de invitación.
+Une al usuario autenticado a una sede mediante su código de invitación. **No está disponible para administradores**: una cuenta administradora solo administra las sedes que crea.
 
 **Headers**
 
@@ -1207,7 +1253,7 @@ Con el token del administrador:
 | Registrar usuario | `POST /api/usuario/registrar` | Ver ejemplo de registro |
 | Ver disponibilidad | `GET /api/usuario/disponible?correo=nuevo@correo.com&documento=1000600066` | Sin body |
 | Recuperar contraseña | `POST /api/usuario/recuperar` | `{"correo":"conductor@sgp.com","documento":"1000300033","password":"123456"}` |
-| Unirse a una sede | `POST /api/organizacion/unirse` | `{"codigoInvitacion":"UNILASALLISTA"}` |
+| Unirse a una sede | `POST /api/organizacion/unirse` | `{"codigoInvitacion":"UNILASALLISTA"}`. Solo para conductores o guardias; el administrador recibe `403`. |
 
 ### 6. Errores comunes en Postman
 

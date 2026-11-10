@@ -534,39 +534,6 @@ import { Casilla, Organizacion, AlertaReserva } from '../../core/models';
               <span class="flex items-center gap-1.5 text-ok"><span class="live-dot scale-75"></span> Socket conectado</span>
             </div>
           </div>
-
-          <!-- Actividad -->
-          <div class="panel p-4">
-            <div class="mb-3 flex items-center justify-between">
-              <span class="mono text-[0.52rem] uppercase tracking-[0.16em] text-chalk">Actividad reciente</span>
-              <span class="mono text-[0.5rem] text-mist">Esta sesión</span>
-            </div>
-
-            @if (feedActividad().length === 0) {
-              <div class="rounded-md border border-edge bg-white/[0.02] p-4 text-center text-[0.62rem] text-mist">
-                Aún no hay movimientos registrados en esta sesión.
-              </div>
-            } @else {
-              <div class="max-h-[15rem] space-y-1.5 overflow-auto pr-0.5">
-                @for (act of feedActividad(); track act.id) {
-                  <div class="flex items-center gap-2.5 rounded border border-transparent px-1.5 py-1.5 transition-colors hover:border-edge hover:bg-white/[0.02]">
-                    <div class="notch-sm grid h-7 w-7 shrink-0 place-items-center bg-flow/15 text-[0.5rem] font-bold text-flow">
-                      {{ act.usuario.charAt(0) }}
-                    </div>
-                    <div class="min-w-0 flex-1">
-                      <div class="flex items-center justify-between gap-2">
-                        <span class="truncate text-[0.64rem] font-medium text-chalk">{{ act.usuario }}</span>
-                        <span class="mono shrink-0 text-[0.46rem] text-mist/60">{{ act.tiempo }}</span>
-                      </div>
-                      <div class="mono truncate text-[0.5rem] uppercase tracking-[0.06em] text-mist">
-                        {{ act.accion }} <span class="text-mist/50">·</span> {{ act.puesto }}
-                      </div>
-                    </div>
-                  </div>
-                }
-              </div>
-            }
-          </div>
         </aside>
       </div>
     </main>
@@ -617,8 +584,6 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   cargandoCasillaId = signal<string | null>(null);
   procesandoAlerta = signal<string | null>(null);
   mensajeFeedback = signal<string | null>(null);
-
-  feedActividad = signal<Array<{ id: string; usuario: string; puesto: string; accion: string; tiempo: string }>>([]);
 
   hoy = new Intl.DateTimeFormat('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date());
 
@@ -690,17 +655,6 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
           this.casillaSeleccionada.update((actual) => (actual ? { ...actual, ...casillaAct } : actual));
         }
 
-        this.feedActividad.update((actividad) => [
-          {
-            id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            usuario: 'Operador / Conductor',
-            puesto: casillaAct.codigo,
-            accion: casillaAct.estado === 'ocupado' ? 'Ocupó' : 'Liberó',
-            tiempo: 'Ahora'
-          },
-          ...actividad.slice(0, 8)
-        ]);
-
         this.cargarAlertas();
       })
     );
@@ -740,15 +694,6 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     this.casillaSeleccionada.set(null);
     this.filtroEstado.set('todos');
     this.busqueda.set('');
-    this.feedActividad.set([
-      {
-        id: `${Date.now()}-sync`,
-        usuario: 'Sistema',
-        puesto: this.organizaciones().find((o) => o._id === id)?.nombre ?? 'Sede',
-        accion: 'Sincronizó',
-        tiempo: 'Ahora'
-      }
-    ]);
     this.cargarDatos();
   }
 
@@ -808,16 +753,6 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
       next: () => {
         this.cargandoCasillaId.set(null);
         this.mensajeFeedback.set(`Puesto ${casilla.codigo} marcado como ${nuevoEstado}. Sincronizado en tiempo real.`);
-        this.feedActividad.update((actividad) => [
-          {
-            id: `${Date.now()}-${casilla._id}`,
-            usuario: 'Tú (consola)',
-            puesto: casilla.codigo,
-            accion: nuevoEstado === 'ocupado' ? 'Ocupó' : 'Liberó',
-            tiempo: 'Ahora'
-          },
-          ...actividad.slice(0, 8)
-        ]);
         this.cargarAlertas();
       },
       error: (err) => {
@@ -839,16 +774,6 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
         this.procesandoAlerta.set(null);
         this.mensajeFeedback.set('Reserva finalizada y puesto liberado correctamente.');
         this.cargarDatos();
-        this.feedActividad.update((actividad) => [
-          {
-            id: `${Date.now()}-alerta`,
-            usuario: 'Tú (consola)',
-            puesto: 'Alerta',
-            accion: 'Liberó',
-            tiempo: 'Ahora'
-          },
-          ...actividad.slice(0, 8)
-        ]);
       },
       error: (err) => {
         this.procesandoAlerta.set(null);
