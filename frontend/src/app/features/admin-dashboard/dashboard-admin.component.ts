@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed, inject } from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, ViewChild, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -277,9 +277,9 @@ import { Casilla, Organizacion, AlertaReserva } from '../../core/models';
           </div>
 
           @if (vista() === 'plano') {
-            <div class="relative h-[28rem] overflow-auto bg-[#06090e] sm:h-[33rem] xl:h-[36rem]">
-              <div class="min-h-full min-w-full p-4">
-                <div class="relative shrink-0" [style.width.px]="ANCHO * zoom()" [style.height.px]="ALTO * zoom()">
+            <div #marcoPlano class="relative aspect-[5/3] overflow-auto bg-[#06090e]">
+              <div class="flex min-h-full min-w-full">
+                <div class="relative m-auto shrink-0" [style.width.px]="ANCHO * zoom()" [style.height.px]="ALTO * zoom()">
                   <div
                     class="plan-surface absolute left-0 top-0 origin-top-left"
                     [style.width.px]="ANCHO"
@@ -582,6 +582,23 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   readonly ANCHO = 1200;
   readonly ALTO = 720;
 
+  /** Marco visible del plano; se usa para calcular el zoom que lo hace encajar. */
+  private marcoPlanoEl: HTMLElement | null = null;
+  private observadorMarco?: ResizeObserver;
+  private zoomManual = false;
+
+  @ViewChild('marcoPlano')
+  set marcoPlano(ref: ElementRef<HTMLElement> | undefined) {
+    this.observadorMarco?.disconnect();
+    this.marcoPlanoEl = ref?.nativeElement ?? null;
+    if (!this.marcoPlanoEl) return;
+
+    this.observadorMarco = new ResizeObserver(() => this.ajustarZoomAlMarco());
+    this.observadorMarco.observe(this.marcoPlanoEl);
+    this.ajustarZoomAlMarco();
+  }
+
+
   organizaciones = signal<Organizacion[]>([]);
   orgSeleccionadaId = signal<string>('');
   casillas = signal<Casilla[]>([]);
@@ -702,6 +719,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.observadorMarco?.disconnect();
     if (this.orgSeleccionadaId()) {
       this.socketService.salirOrganizacion(this.orgSeleccionadaId());
     }
@@ -842,11 +860,28 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
   }
 
   cambiarZoom(delta: number): void {
-    this.zoom.set(Math.max(0.35, Math.min(1.1, Number((this.zoom() + delta).toFixed(2)))));
+    this.zoomManual = true;
+    this.zoom.set(Math.max(0.15, Math.min(1.1, Number((this.zoom() + delta).toFixed(2)))));
   }
 
   resetZoom(): void {
-    this.zoom.set(0.58);
+    this.zoomManual = false;
+    this.ajustarZoomAlMarco();
+  }
+
+  private ajustarZoomAlMarco(): void {
+    if (this.zoomManual) return;
+
+    const marco = this.marcoPlanoEl;
+    if (!marco) return;
+
+    const ancho = marco.clientWidth;
+    const alto = marco.clientHeight;
+    if (!ancho || !alto) return;
+
+    // 1px de margen para evitar barras de desplazamiento por redondeo.
+    const ajuste = Math.min((ancho - 1) / this.ANCHO, (alto - 1) / this.ALTO);
+    this.zoom.set(Math.max(0.15, Math.min(1.1, Number(ajuste.toFixed(3)))));
   }
 
   tipoCorto(tipo: Casilla['tipo']): string {

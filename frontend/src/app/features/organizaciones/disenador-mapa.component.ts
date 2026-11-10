@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed, inject } from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, ViewChild, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -242,7 +242,7 @@ interface Feedback {
                   <path stroke-linecap="round" stroke-width="2" d="M5 12h14"></path>
                 </svg>
               </button>
-              <button type="button" (click)="resetZoom()" class="mono h-8 min-w-[3rem] border-x border-edge px-1 text-[0.55rem] text-chalk transition-colors hover:bg-white/[0.04]" title="Restablecer zoom">
+              <button type="button" (click)="resetZoom()" class="mono h-8 min-w-[3rem] border-x border-edge px-1 text-[0.55rem] text-chalk transition-colors hover:bg-white/[0.04]" title="Ajustar al recuadro">
                 {{ zoomPorcentaje() }}%
               </button>
               <button type="button" (click)="cambiarZoom(0.1)" class="grid h-8 w-8 place-items-center text-mist transition-colors hover:bg-white/[0.04] hover:text-chalk" title="Acercar">
@@ -287,10 +287,10 @@ interface Feedback {
           </div>
 
           <div class="relative">
-            <div class="relative h-[30rem] overflow-auto bg-[#06090e] sm:h-[36rem] xl:h-[40rem]">
-            <div class="min-h-full min-w-full p-4">
+            <div #marcoPlano class="relative aspect-[5/3] overflow-auto bg-[#06090e]">
+            <div class="flex min-h-full min-w-full">
               <div
-                class="relative shrink-0"
+                class="relative m-auto shrink-0"
                 [style.width.px]="ANCHO * zoom()"
                 [style.height.px]="ALTO * zoom()"
               >
@@ -699,6 +699,23 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
 
   readonly ANCHO = 1200;
   readonly ALTO = 720;
+
+  /** Marco visible del lienzo; se usa para calcular el zoom que lo hace encajar. */
+  private marcoPlanoEl: HTMLElement | null = null;
+  private observadorMarco?: ResizeObserver;
+  private zoomManual = false;
+
+  @ViewChild('marcoPlano')
+  set marcoPlano(ref: ElementRef<HTMLElement> | undefined) {
+    this.observadorMarco?.disconnect();
+    this.marcoPlanoEl = ref?.nativeElement ?? null;
+    if (!this.marcoPlanoEl) return;
+
+    this.observadorMarco = new ResizeObserver(() => this.ajustarZoomAlMarco());
+    this.observadorMarco.observe(this.marcoPlanoEl);
+    this.ajustarZoomAlMarco();
+  }
+
   /**
    * El satélite se dibuja al doble de resolución y se contrapica al 50%.
    * Así se mantiene nítido cuando el lienzo se escala (40%–150%) sin
@@ -789,6 +806,7 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.observadorMarco?.disconnect();
     window.removeEventListener('pointermove', this.alMoverGlobal);
     window.removeEventListener('pointerup', this.alSoltarGlobal);
     window.removeEventListener('keydown', this.alPresionarTecla);
@@ -1387,11 +1405,28 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
 
   // ── Zoom ─────────────────────────────────────────────────────────
   cambiarZoom(delta: number): void {
-    this.zoom.set(Math.max(0.4, Math.min(1.5, Number((this.zoom() + delta).toFixed(2)))));
+    this.zoomManual = true;
+    this.zoom.set(Math.max(0.15, Math.min(1.5, Number((this.zoom() + delta).toFixed(2)))));
   }
 
   resetZoom(): void {
-    this.zoom.set(0.7);
+    this.zoomManual = false;
+    this.ajustarZoomAlMarco();
+  }
+
+  private ajustarZoomAlMarco(): void {
+    if (this.zoomManual) return;
+
+    const marco = this.marcoPlanoEl;
+    if (!marco) return;
+
+    const ancho = marco.clientWidth;
+    const alto = marco.clientHeight;
+    if (!ancho || !alto) return;
+
+    // 1px de margen para evitar barras de desplazamiento por redondeo.
+    const ajuste = Math.min((ancho - 1) / this.ANCHO, (alto - 1) / this.ALTO);
+    this.zoom.set(Math.max(0.15, Math.min(1.5, Number(ajuste.toFixed(3)))));
   }
 
   // ── Guardar ──────────────────────────────────────────────────────
