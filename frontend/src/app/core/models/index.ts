@@ -13,7 +13,7 @@ export interface Organizacion {
   _id: string;
   nombre: string;
   nit: string;
-  tipoEntidad: 'Residencial' | 'Comercial' | 'Mixto' | 'Publico';
+  tipoEntidad: 'Residencial' | 'Comercial' | 'Mixto' | 'Publico' | 'Privado';
   direccion: string;
   descripcion?: string;
   totalPuestos: number;

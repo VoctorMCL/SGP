@@ -7,7 +7,7 @@ let membresiaHelper = require("../helpers/membresia");
 let validacion = require("../helpers/validacion");
 let { errorInterno } = require("../helpers/respuestas");
 
-let tiposEntidadValidos = ['Residencial', 'Comercial', 'Mixto', 'Publico'];
+let tiposEntidadValidos = ['Residencial', 'Comercial', 'Mixto', 'Publico', 'Privado'];
 
 function generarCodigo() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -34,7 +34,7 @@ function crearOrganizacion(req, resp) {
         return resp.status(400).send({ "message": "Faltan datos obligatorios de la organizacion" });
     }
     else if (!tiposEntidadValidos.includes(requestBody.tipoEntidad)) {
-        return resp.status(400).send({ "message": "El tipo de entidad debe ser Residencial, Comercial, Mixto o Publico" });
+        return resp.status(400).send({ "message": "El tipo de entidad debe ser Residencial, Comercial, Mixto, Publico o Privado" });
     }
     else if (!validacion.texto(requestBody.nombre) || !validacion.texto(requestBody.nit) || !validacion.texto(requestBody.direccion)) {
         return resp.status(400).send({ "message": "nombre, nit y direccion deben ser texto" });
@@ -169,7 +169,7 @@ function editarOrganizacion(req, resp) {
     }
 
     if (requestBody.tipoEntidad && !tiposEntidadValidos.includes(requestBody.tipoEntidad)) {
-        return resp.status(400).send({ "message": "El tipo de entidad debe ser Residencial, Comercial, Mixto o Publico" });
+        return resp.status(400).send({ "message": "El tipo de entidad debe ser Residencial, Comercial, Mixto, Publico o Privado" });
     }
 
     if (requestBody.nombre !== undefined && !validacion.texto(requestBody.nombre)) {

@@ -1118,6 +1118,11 @@ kbd.node-key {
   background: #070a10;
 }
 
+.custom-pin {
+  background: transparent;
+  border: 0;
+}
+
 /* ════════════════════════════════════════════════════════════════
    TEMA CLARO
    El tema oscuro es el de fábrica. Todo lo de este bloque se activa

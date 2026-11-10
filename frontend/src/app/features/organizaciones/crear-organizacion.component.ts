@@ -91,6 +91,7 @@ import { CasillaService } from '../../core/services/casilla.service';
                   <option value="Comercial">Comercial</option>
                   <option value="Mixto">Mixto</option>
                   <option value="Publico">Público</option>
+                  <option value="Privado">Privado</option>
                 </select>
               </div>
 
@@ -349,11 +350,14 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
 
     const pinIcon = L.divIcon({
       className: 'custom-pin',
-      html: `<div style="position:relative;width:34px;height:34px;display:grid;place-items:center;background:#cbd5e1;color:#080b0f;border-radius:8px 8px 8px 2px;box-shadow:0 0 0 4px rgba(203,213,225,.25),0 14px 24px -8px rgba(0,0,0,.9);transform:rotate(-45deg)">
-        <span style="transform:rotate(45deg);font:700 13px/1 'JetBrains Mono',monospace">P</span>
+      html: `<div style="width:26px;height:38px;filter:drop-shadow(0 10px 10px rgba(0,0,0,.45))">
+        <svg width="26" height="38" viewBox="0 0 26 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13 1.5C6.65 1.5 1.5 6.65 1.5 13c0 8.4 11.5 23.5 11.5 23.5S24.5 21.4 24.5 13C24.5 6.65 19.35 1.5 13 1.5Z" fill="#5d8bff" stroke="#080b0f" stroke-width="1.6"/>
+          <circle cx="13" cy="12.7" r="4.4" fill="#080b0f"/>
+        </svg>
       </div>`,
-      iconSize: [34, 34],
-      iconAnchor: [17, 32]
+      iconSize: [26, 38],
+      iconAnchor: [13, 37]
     });
 
     this.marker = L.marker([latDefault, lngDefault], { icon: pinIcon, draggable: true }).addTo(this.map);
