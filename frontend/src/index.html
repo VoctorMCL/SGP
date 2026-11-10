@@ -16,13 +16,19 @@
     (function () {
       try {
         var tema = localStorage.getItem('sgp-theme');
-        if (tema !== 'light' && tema !== 'dark') tema = 'dark';
+        if (tema !== 'light' && tema !== 'dark') {
+          // Sin preferencia guardada se sigue al dispositivo.
+          tema = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : (window.matchMedia ? 'light' : 'dark');
+        }
         document.documentElement.setAttribute('data-theme', tema);
         document.documentElement.style.colorScheme = tema;
         var meta = document.querySelector('meta[name="theme-color"]');
         if (meta) meta.setAttribute('content', tema === 'light' ? '#f4f6fb' : '#05070b');
       } catch (e) {
         document.documentElement.setAttribute('data-theme', 'dark');
+        document.documentElement.style.colorScheme = 'dark';
       }
     })();
   </script>

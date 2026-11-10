@@ -53,7 +53,7 @@
               "node_modules/leaflet/dist/leaflet.css",
               "frontend/src/styles.css"
             ],
-            "allowedCommonJsDependencies": ["leaflet"]
+            "allowedCommonJsDependencies": ["leaflet", "tz-lookup"]
           },
           "configurations": {
             "production": {

@@ -17,8 +17,9 @@ export class App {
   private themeService = inject(ThemeService);
 
   constructor() {
-    // Inicializa el tema (y sincroniza el meta theme-color) antes de navegar.
-    this.themeService.establecer(this.themeService.tema());
+    // La inyección crea el servicio temprano; su constructor aplica el tema
+    // del sistema o la preferencia guardada antes de la primera navegación.
+    this.themeService.tema();
     this.aplicarEscala(this.document.defaultView?.location.pathname ?? '');
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))

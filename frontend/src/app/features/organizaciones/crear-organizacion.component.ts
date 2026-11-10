@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import * as L from 'leaflet';
+import tzlookup from 'tz-lookup';
 import { NavbarComponent } from '../../shared/components/navbar.component';
 import { OrganizacionService } from '../../core/services/organizacion.service';
 import { CasillaService } from '../../core/services/casilla.service';
@@ -81,7 +82,10 @@ import { CasillaService } from '../../core/services/casilla.service';
 
               <div>
                 <label class="label" for="nit">NIT / Identificación fiscal</label>
-                <input id="nit" type="text" formControlName="nit" placeholder="900123456-7" class="field field-mono" />
+                <input id="nit" type="text" formControlName="nit" placeholder="890.984.812-5" class="field field-mono" />
+                @if (orgForm.controls.nit.touched && orgForm.controls.nit.hasError('pattern')) {
+                  <p class="mt-1 text-[0.58rem] leading-relaxed text-danger">Solo números, puntos y guiones. Ej. 890.984.812-5</p>
+                }
               </div>
 
               <div>
@@ -116,9 +120,6 @@ import { CasillaService } from '../../core/services/casilla.service';
                   <div class="pointer-events-none absolute left-3 top-3 z-[500] flex items-center gap-2 rounded border border-edge/80 bg-void/85 px-2.5 py-1.5 text-[0.6rem] text-mist backdrop-blur">
                     <span class="h-1.5 w-1.5 rounded-full bg-signal"></span>
                     Haz clic en el mapa para fijar la sede
-                  </div>
-                  <div class="pointer-events-none absolute bottom-3 right-3 z-[500] rounded border border-edge/80 bg-void/85 px-2 py-1 backdrop-blur">
-                    <span class="mono text-[0.5rem] uppercase tracking-[0.14em] text-mist/70">OpenStreetMap</span>
                   </div>
                   <span class="pointer-events-none absolute left-2 top-2 z-[500] h-4 w-4 border-l border-t border-signal/60"></span>
                   <span class="pointer-events-none absolute bottom-2 left-2 z-[500] h-4 w-4 border-b border-l border-signal/60"></span>
@@ -158,7 +159,7 @@ import { CasillaService } from '../../core/services/casilla.service';
             </div>
 
             <div class="p-6">
-              <div class="grid gap-4 sm:grid-cols-3">
+              <div class="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label class="label" for="totalPuestos">Puestos iniciales</label>
                   <input id="totalPuestos" type="number" min="1" formControlName="totalPuestos" placeholder="24" class="field field-mono" />
@@ -166,10 +167,6 @@ import { CasillaService } from '../../core/services/casilla.service';
                 <div>
                   <label class="label" for="limiteMiembros">Límite de miembros</label>
                   <input id="limiteMiembros" type="number" min="1" formControlName="limiteMiembros" placeholder="100" class="field field-mono" />
-                </div>
-                <div>
-                  <label class="label" for="zonaHoraria">Zona horaria</label>
-                  <input id="zonaHoraria" type="text" formControlName="zonaHoraria" class="field field-mono" />
                 </div>
               </div>
 
@@ -188,7 +185,7 @@ import { CasillaService } from '../../core/services/casilla.service';
                     <input type="checkbox" formControlName="cobroAutomatico" />
                     <span>
                       <span class="block text-[0.7rem] font-medium text-chalk">Cobro automático</span>
-                      <span class="block text-[0.58rem] text-mist">Liquidación al finalizar</span>
+                      <span class="block text-[0.58rem] text-mist">Válido para Flypass o GoPass</span>
                     </span>
                   </label>
 
@@ -253,7 +250,7 @@ import { CasillaService } from '../../core/services/casilla.service';
                 </div>
                 <div class="flex items-center justify-between">
                   <dt class="text-mist">Zona horaria</dt>
-                  <dd class="mono font-medium text-chalk">{{ orgForm.value.zonaHoraria }}</dd>
+                  <dd class="mono font-medium text-chalk" title="Se calcula automáticamente según la ubicación del pin">{{ orgForm.value.zonaHoraria }}</dd>
                 </div>
               </dl>
 
@@ -309,7 +306,7 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
 
   orgForm = this.fb.group({
     nombre: ['', [Validators.required]],
-    nit: ['', [Validators.required]],
+    nit: ['', [Validators.required, Validators.pattern(/^[0-9]+(?:[.\-][0-9]+)*$/)]],
     tipoEntidad: ['Residencial', [Validators.required]],
     direccion: ['', [Validators.required]],
     descripcion: [''],
@@ -344,8 +341,7 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
     L.control.zoom({ position: 'bottomright' }).addTo(this.map);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap contributors'
+      maxZoom: 19
     }).addTo(this.map);
 
     const pinIcon = L.divIcon({
@@ -361,10 +357,12 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
     });
 
     this.marker = L.marker([latDefault, lngDefault], { icon: pinIcon, draggable: true }).addTo(this.map);
+    this.actualizarZonaHoraria(latDefault, lngDefault);
 
     this.map.on('click', (e: L.LeafletMouseEvent) => {
       if (this.marker) {
         this.marker.setLatLng(e.latlng);
+        this.actualizarZonaHoraria(e.latlng.lat, e.latlng.lng);
         this.geocodificarInverso(e.latlng.lat, e.latlng.lng);
       }
     });
@@ -372,6 +370,7 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
     this.marker.on('dragend', () => {
       if (this.marker) {
         const pos = this.marker.getLatLng();
+        this.actualizarZonaHoraria(pos.lat, pos.lng);
         this.geocodificarInverso(pos.lat, pos.lng);
       }
     });
@@ -389,12 +388,26 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
           const lng = pos.coords.longitude;
           this.map?.setView([lat, lng], 16);
           this.marker?.setLatLng([lat, lng]);
+          this.actualizarZonaHoraria(lat, lng);
           this.geocodificarInverso(lat, lng);
         },
         (err) => {
           console.warn('No se pudo obtener la geolocalización:', err);
         }
       );
+    }
+  }
+
+  /** La zona horaria se deduce de las coordenadas reales del pin. */
+  private actualizarZonaHoraria(lat: number, lng: number): void {
+    try {
+      const zona = tzlookup(lat, lng);
+      if (zona && zona !== this.orgForm.controls.zonaHoraria.value) {
+        this.orgForm.controls.zonaHoraria.setValue(zona);
+      }
+    }
+    catch {
+      // Si el punto no se puede resolver, se conserva la zona actual.
     }
   }
 
@@ -410,6 +423,13 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
   }
 
   crear(): void {
+    const nit = this.orgForm.controls.nit;
+    if (nit.hasError('pattern')) {
+      nit.markAsTouched();
+      this.errorMensaje.set('El NIT solo puede contener números, puntos y guiones. Ej. 890.984.812-5');
+      return;
+    }
+
     if (this.orgForm.invalid) {
       this.errorMensaje.set('Por favor completa todos los campos requeridos correctamente.');
       return;

@@ -13,6 +13,29 @@ function generarCodigo() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+let colasPorOrganizacion = new Map();
+
+/**
+ * Serializa las operaciones de una misma organizacion. Asi dos personas no
+ * pueden unirse al mismo tiempo y dejar el total por encima del limite.
+ */
+function conBloqueoOrganizacion(organizacionId, tarea) {
+    let clave = String(organizacionId);
+    let anterior = colasPorOrganizacion.get(clave) || Promise.resolve();
+    let ejecucion = anterior.then(tarea);
+    let cola = ejecucion.then(() => undefined, () => undefined);
+
+    colasPorOrganizacion.set(clave, cola);
+
+    cola.then(() => {
+        if (colasPorOrganizacion.get(clave) === cola) {
+            colasPorOrganizacion.delete(clave);
+        }
+    });
+
+    return ejecucion;
+}
+
 function banderasValidas(requestBody) {
     let banderas = ['reservasPublicas', 'cobroAutomatico', 'cobroPorHora', 'acceso24_7'];
 
@@ -39,13 +62,16 @@ function crearOrganizacion(req, resp) {
     else if (!validacion.texto(requestBody.nombre) || !validacion.texto(requestBody.nit) || !validacion.texto(requestBody.direccion)) {
         return resp.status(400).send({ "message": "nombre, nit y direccion deben ser texto" });
     }
+    else if (!validacion.nitValido(requestBody.nit)) {
+        return resp.status(400).send({ "message": "El NIT solo puede contener numeros, puntos y guiones, por ejemplo 890.984.812-5" });
+    }
     else if (!validacion.numeroEnteroPositivo(requestBody.totalPuestos) || !validacion.numeroEnteroPositivo(requestBody.limiteMiembros)) {
         return resp.status(400).send({ "message": "totalPuestos y limiteMiembros deben ser numeros enteros mayores que cero" });
     }
     else if (!validacion.zonaHorariaValida(requestBody.zonaHoraria)) {
         return resp.status(400).send({ "message": "zonaHoraria debe ser una zona valida, por ejemplo America/Bogota" });
     }
-    else if (requestBody.descripcion !== undefined && !validacion.texto(requestBody.descripcion)) {
+    else if (requestBody.descripcion !== undefined && typeof requestBody.descripcion !== 'string') {
         return resp.status(400).send({ "message": "descripcion debe ser texto" });
     }
     else if (!banderasValidas(requestBody)) {
@@ -54,7 +80,7 @@ function crearOrganizacion(req, resp) {
 
     let organizacion = new Organizaciones({
         "nombre": requestBody.nombre,
-        "nit": requestBody.nit,
+        "nit": requestBody.nit.trim(),
         "tipoEntidad": requestBody.tipoEntidad,
         "direccion": requestBody.direccion,
         "descripcion": requestBody.descripcion || "",
@@ -118,41 +144,51 @@ function unirseOrganizacion(req, resp) {
                 return resp.status(404).send({ "message": "Codigo de invitacion invalido" });
             }
 
-            Membresias.findOne({ "usuario": req.usuario.id, "organizacion": organizacion._id }).then(
-                (membresiaExistente) => {
-                    if (membresiaExistente) {
-                        return resp.status(400).send({ "message": "Ya pertenece a esta organizacion" });
-                    }
-
-                    Membresias.countDocuments({ "organizacion": organizacion._id }).then(
-                        (totalMiembros) => {
-                            if (totalMiembros >= organizacion.limiteMiembros) {
-                                return resp.status(400).send({ "message": "La organizacion alcanzo el limite de miembros" });
-                            }
-
-                            let membresia = new Membresias({
-                                "usuario": req.usuario.id,
-                                "organizacion": organizacion._id
-                            });
-
-                            membresia.save().then(
-                                () => {
-                                    resp.status(201).send({ "message": "se unio a la organizacion", "organizacion": organizacion });
-                                },
-                                err => {
-                                    errorInterno(resp, "Error al unirse a la organizacion", err);
-                                }
-                            );
-                        },
-                        err => {
-                            errorInterno(resp, "Error al contar los miembros", err);
+            conBloqueoOrganizacion(organizacion._id, () => {
+                return Membresias.findOne({ "usuario": req.usuario.id, "organizacion": organizacion._id }).then(
+                    (membresiaExistente) => {
+                        if (membresiaExistente) {
+                            return resp.status(400).send({ "message": "Ya pertenece a esta organizacion" });
                         }
-                    );
-                },
-                err => {
-                    errorInterno(resp, "Error al buscar la membresia", err);
+
+                        return Membresias.countDocuments({ "organizacion": organizacion._id }).then(
+                            (totalMiembros) => {
+                                let limite = Number.isInteger(organizacion.limiteMiembros)
+                                    ? organizacion.limiteMiembros
+                                    : Infinity;
+
+                                if (totalMiembros >= limite) {
+                                    return resp.status(400).send({ "message": "La organizacion alcanzo el limite de miembros" });
+                                }
+
+                                let membresia = new Membresias({
+                                    "usuario": req.usuario.id,
+                                    "organizacion": organizacion._id
+                                });
+
+                                return membresia.save().then(
+                                    () => {
+                                        resp.status(201).send({ "message": "se unio a la organizacion", "organizacion": organizacion });
+                                    },
+                                    err => {
+                                        errorInterno(resp, "Error al unirse a la organizacion", err);
+                                    }
+                                );
+                            },
+                            err => {
+                                errorInterno(resp, "Error al contar los miembros", err);
+                            }
+                        );
+                    },
+                    err => {
+                        errorInterno(resp, "Error al buscar la membresia", err);
+                    }
+                );
+            }).catch((err) => {
+                if (!resp.headersSent) {
+                    errorInterno(resp, "Error al unirse a la organizacion", err);
                 }
-            );
+            });
         },
         err => {
             errorInterno(resp, "Error al buscar la organizacion", err);
@@ -160,7 +196,7 @@ function unirseOrganizacion(req, resp) {
     );
 }
 
-function editarOrganizacion(req, resp) {
+async function editarOrganizacion(req, resp) {
     let organizacionId = req.params.id;
     let requestBody = req.body || {};
 
@@ -176,15 +212,15 @@ function editarOrganizacion(req, resp) {
         return resp.status(400).send({ "message": "nombre debe ser texto" });
     }
 
-    if (requestBody.nit !== undefined && !validacion.texto(requestBody.nit)) {
-        return resp.status(400).send({ "message": "nit debe ser texto" });
+    if (requestBody.nit !== undefined && !validacion.nitValido(requestBody.nit)) {
+        return resp.status(400).send({ "message": "El NIT solo puede contener numeros, puntos y guiones, por ejemplo 890.984.812-5" });
     }
 
     if (requestBody.direccion !== undefined && !validacion.texto(requestBody.direccion)) {
         return resp.status(400).send({ "message": "direccion debe ser texto" });
     }
 
-    if (requestBody.descripcion !== undefined && !validacion.texto(requestBody.descripcion)) {
+    if (requestBody.descripcion !== undefined && typeof requestBody.descripcion !== 'string') {
         return resp.status(400).send({ "message": "descripcion debe ser texto" });
     }
 
@@ -215,44 +251,45 @@ function editarOrganizacion(req, resp) {
         return resp.status(400).send({ "message": "No hay campos validos para actualizar" });
     }
 
-    Organizaciones.findById(organizacionId).then(
-        (organizacion) => {
-            if (!organizacion) {
-                return resp.status(404).send({ "message": "Organizacion no encontrada" });
-            }
-            if (organizacion.creadoPor.toString() !== req.usuario.id) {
-                return resp.status(403).send({ "message": "Solo el creador de la organizacion puede modificarla" });
-            }
+    try {
+        let organizacion = await Organizaciones.findById(organizacionId);
 
-            if (requestBody.totalPuestos !== undefined) {
-                Casillas.countDocuments({
-                    "organizacion": organizacion._id,
-                    "tipo": { $in: ['standard', 'discapacitados', 'electrico'] }
-                }).then(
-                    (casillasExistentes) => {
-                        if (requestBody.totalPuestos < casillasExistentes) {
-                            return resp.status(400).send({ "message": "La organizacion ya tiene " + casillasExistentes + " puestos, no puede bajar totalPuestos por debajo de eso" });
-                        }
-                        aplicarCambiosOrganizacion(organizacion, requestBody, resp);
-                    },
-                    err => {
-                        errorInterno(resp, "Error al validar las casillas existentes", err);
-                    }
-                );
-            }
-            else {
-                aplicarCambiosOrganizacion(organizacion, requestBody, resp);
-            }
-        },
-        err => {
-            errorInterno(resp, "Error al buscar la organizacion", err);
+        if (!organizacion) {
+            return resp.status(404).send({ "message": "Organizacion no encontrada" });
         }
-    );
+        if (organizacion.creadoPor.toString() !== req.usuario.id) {
+            return resp.status(403).send({ "message": "Solo el creador de la organizacion puede modificarla" });
+        }
+
+        if (requestBody.totalPuestos !== undefined) {
+            let casillasExistentes = await Casillas.countDocuments({
+                "organizacion": organizacion._id,
+                "tipo": { $in: ['standard', 'discapacitados', 'electrico'] }
+            });
+
+            if (requestBody.totalPuestos < casillasExistentes) {
+                return resp.status(400).send({ "message": "La organizacion ya tiene " + casillasExistentes + " puestos, no puede bajar totalPuestos por debajo de eso" });
+            }
+        }
+
+        if (requestBody.limiteMiembros !== undefined) {
+            let miembrosActuales = await Membresias.countDocuments({ "organizacion": organizacion._id });
+
+            if (requestBody.limiteMiembros < miembrosActuales) {
+                return resp.status(400).send({ "message": "La organizacion ya tiene " + miembrosActuales + " miembros, no puede bajar limiteMiembros por debajo de eso" });
+            }
+        }
+
+        aplicarCambiosOrganizacion(organizacion, requestBody, resp);
+    }
+    catch (err) {
+        errorInterno(resp, "Error al actualizar la organizacion", err);
+    }
 }
 
 function aplicarCambiosOrganizacion(organizacion, requestBody, resp) {
     if (requestBody.nombre) organizacion.nombre = requestBody.nombre;
-    if (requestBody.nit) organizacion.nit = requestBody.nit;
+    if (requestBody.nit) organizacion.nit = requestBody.nit.trim();
     if (requestBody.tipoEntidad) organizacion.tipoEntidad = requestBody.tipoEntidad;
     if (requestBody.direccion) organizacion.direccion = requestBody.direccion;
     if (requestBody.descripcion !== undefined) organizacion.descripcion = requestBody.descripcion;
