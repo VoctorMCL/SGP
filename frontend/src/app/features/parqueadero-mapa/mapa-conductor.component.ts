@@ -558,7 +558,10 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
   private marcoPlanoEl: HTMLElement | null = null;
   private observadorMarco?: ResizeObserver;
   private zoomManual = false;
-  /** Zoom mínimo para que el plano siempre cubra el marco (sin bandas negras). */
+  /** Zoom mínimo permitido; el ajuste al recuadro puede quedar por encima. */
+  private readonly ZOOM_MIN = 0.15;
+  private readonly ZOOM_MAX = 1.4;
+  /** Zoom calculado para encajar el plano completo dentro del marco. */
   private zoomAjuste = 0.15;
 
   @ViewChild('marcoPlano')
@@ -844,7 +847,7 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
 
   cambiarZoom(delta: number): void {
     this.zoomManual = true;
-    this.zoom.set(Math.max(this.zoomAjuste, Math.min(1.4, Number((this.zoom() + delta).toFixed(2)))));
+    this.zoom.set(Math.max(this.ZOOM_MIN, Math.min(this.ZOOM_MAX, Number((this.zoom() + delta).toFixed(2)))));
   }
 
   /** Vuelve a encajar el plano completo dentro del recuadro visible. */
@@ -863,10 +866,10 @@ export class MapaConductorComponent implements OnInit, OnDestroy {
 
     // 1px de margen para evitar barras de desplazamiento por redondeo.
     const ajuste = Math.min((ancho - 1) / this.ANCHO, (alto - 1) / this.ALTO);
-    this.zoomAjuste = Math.max(0.05, Math.min(1.4, Number(ajuste.toFixed(3))));
+    this.zoomAjuste = Math.max(this.ZOOM_MIN, Math.min(this.ZOOM_MAX, Number(ajuste.toFixed(3))));
 
-    // Si el plano quedó más pequeño que el marco, se vuelve a ajustar.
-    if (!this.zoomManual || this.zoom() < this.zoomAjuste) {
+    // Solo se reajusta automáticamente si el usuario no eligió un zoom manual.
+    if (!this.zoomManual) {
       this.zoom.set(this.zoomAjuste);
     }
   }
