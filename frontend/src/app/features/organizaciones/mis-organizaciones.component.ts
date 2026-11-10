@@ -219,7 +219,7 @@ import { Organizacion } from '../../core/models';
                 }
 
                 <div class="mt-auto flex flex-wrap items-center gap-2 pt-5">
-                  @if (authService.userRole() === 'administrador') {
+                  @if (authService.userRole() === 'administrador' && esCreador(org)) {
                     <a
                       [routerLink]="['/organizaciones', org._id, 'disenador']"
                       class="btn btn-ghost flex-1 border-edge"
@@ -293,6 +293,11 @@ export class MisOrganizacionesComponent implements OnInit {
   hoy = new Intl.DateTimeFormat('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date());
 
   totalPuestos = computed(() => this.organizaciones().reduce((total, org) => total + (org.totalPuestos || 0), 0));
+
+  /** El editor de planos solo está disponible para quien creó la sede. */
+  esCreador(org: Organizacion): boolean {
+    return org.creadoPor === this.authService.currentUser()?._id;
+  }
 
   ngOnInit(): void {
     this.cargar();

@@ -1,6 +1,7 @@
 import { Component, DOCUMENT, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { ThemeService } from './core/services/theme.service';
 
 @Component({
   imports: [RouterOutlet],
@@ -13,8 +14,11 @@ export class App {
 
   private router = inject(Router);
   private document = inject(DOCUMENT);
+  private themeService = inject(ThemeService);
 
   constructor() {
+    // Inicializa el tema (y sincroniza el meta theme-color) antes de navegar.
+    this.themeService.establecer(this.themeService.tema());
     this.aplicarEscala(this.document.defaultView?.location.pathname ?? '');
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))

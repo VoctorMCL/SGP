@@ -14,6 +14,8 @@ import { Router } from '@angular/router';
 import { Observable, of, timer } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
+import { ThemeService } from '../../core/services/theme.service';
+import { ThemeToggleComponent } from '../../shared/components/theme-toggle.component';
 
 type CasillaDemo = {
   codigo: string;
@@ -28,9 +30,12 @@ type CasillaDemo = {
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ThemeToggleComponent],
   template: `
     <div class="relative min-h-screen overflow-hidden lg:grid lg:grid-cols-[1.08fr_0.92fr]">
+      <div class="absolute right-5 top-5 z-30 sm:right-8 sm:top-8">
+        <app-theme-toggle></app-theme-toggle>
+      </div>
       <!-- ── Panel editorial ───────────────────────────────────── -->
       <section class="relative flex flex-col justify-between overflow-hidden border-b border-edge px-6 py-10 sm:px-12 lg:border-b-0 lg:border-r lg:px-16 lg:py-14">
         <div class="pointer-events-none absolute inset-0">
@@ -44,9 +49,9 @@ type CasillaDemo = {
           <!-- Marca -->
           <div class="flex items-center gap-4">
             <img
-              src="favicon.svg"
+              [src]="logoMarca"
               alt="Logo SGP"
-              class="h-14 w-14 shrink-0 drop-shadow-[0_0_24px_rgba(203,213,225,0.28)]"
+              class="brand-mark h-14 w-14 shrink-0"
             />
             <div>
               <div class="flex items-baseline gap-2.5">
@@ -645,6 +650,7 @@ export class LoginComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
+  readonly themeService = inject(ThemeService);
 
   tabActiva = signal<'login' | 'register'>('login');
   direccionTab = signal<'izquierda-derecha' | 'derecha-izquierda' | null>(null);
@@ -655,6 +661,14 @@ export class LoginComponent {
   verPassword = signal<boolean>(false);
 
   casillaSeleccionada = signal<string>('A-02');
+
+  /**
+   * El logo es inverso al fondo: en tema oscuro se usa la versión clara y en
+   * tema claro la versión oscura (el favicon de fábrica).
+   */
+  get logoMarca(): string {
+    return this.themeService.tema() === 'light' ? 'favicon.svg' : 'favicon-light.svg';
+  }
 
   demoSlots: CasillaDemo[] = [
     { codigo: 'A-01', ocupado: false, tipo: 'Standard' },

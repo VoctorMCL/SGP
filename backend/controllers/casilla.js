@@ -9,7 +9,25 @@ let socketHelper = require("../helpers/socket");
 let { errorInterno } = require("../helpers/respuestas");
 
 let tiposValidos = ['standard', 'discapacitados', 'electrico', 'entrada', 'salida', 'carril'];
+let tiposPuesto = ['standard', 'discapacitados', 'electrico'];
 let estadosValidos = ['libre', 'ocupado'];
+
+function esPuesto(tipo) {
+    return tiposPuesto.includes(tipo);
+}
+
+/**
+ * Deja `totalPuestos` igual al numero real de puestos del plano.
+ * Las entradas, salidas y carriles no cuentan como puestos.
+ */
+function sincronizarTotalPuestos(organizacionId) {
+    return Casillas.countDocuments({
+        "organizacion": organizacionId,
+        "tipo": { $in: tiposPuesto }
+    }).then((total) => {
+        return Organizaciones.findByIdAndUpdate(organizacionId, { $set: { "totalPuestos": total } });
+    });
+}
 
 function crearCasilla(req, resp) {
     let requestBody = req.body || {};
@@ -52,38 +70,24 @@ function crearCasilla(req, resp) {
                         return resp.status(400).send({ "message": "Ya existe una casilla con ese codigo en esa seccion" });
                     }
 
-                    Casillas.countDocuments({
+                    let casilla = new Casillas({
                         "organizacion": organizacion._id,
-                        "tipo": { $in: ['standard', 'discapacitados', 'electrico'] }
-                    }).then(
-                        (casillasExistentes) => {
-                            if (casillasExistentes >= organizacion.totalPuestos) {
-                                return resp.status(400).send({ "message": "La organizacion ya tiene sus " + organizacion.totalPuestos + " puestos definidos" });
-                            }
+                        "codigo": requestBody.codigo,
+                        "seccion": requestBody.seccion,
+                        "tipo": tipo,
+                        "estado": "libre",
+                        "posX": typeof requestBody.posX === 'number' ? requestBody.posX : 0,
+                        "posY": typeof requestBody.posY === 'number' ? requestBody.posY : 0,
+                        "rotacion": typeof requestBody.rotacion === 'number' ? requestBody.rotacion : 0
+                    });
 
-                            let casilla = new Casillas({
-                                "organizacion": organizacion._id,
-                                "codigo": requestBody.codigo,
-                                "seccion": requestBody.seccion,
-                                "tipo": tipo,
-                                "estado": "libre",
-                                "posX": typeof requestBody.posX === 'number' ? requestBody.posX : 0,
-                                "posY": typeof requestBody.posY === 'number' ? requestBody.posY : 0,
-                                "rotacion": typeof requestBody.rotacion === 'number' ? requestBody.rotacion : 0
-                            });
-
-                            casilla.save().then(
-                                (casillaCreada) => {
-                                    socketHelper.emitirEvento('casilla:creada', casillaCreada, casillaCreada.organizacion);
-                                    resp.status(201).send({ "message": "casilla creada", "casilla": casillaCreada });
-                                },
-                                err => {
-                                    errorInterno(resp, "Error al crear la casilla", err);
-                                }
-                            );
+                    casilla.save().then(
+                        (casillaCreada) => {
+                            socketHelper.emitirEvento('casilla:creada', casillaCreada, casillaCreada.organizacion);
+                            resp.status(201).send({ "message": "casilla creada", "casilla": casillaCreada });
                         },
                         err => {
-                            errorInterno(resp, "Error al contar las casillas", err);
+                            errorInterno(resp, "Error al crear la casilla", err);
                         }
                     );
                 }
@@ -286,14 +290,53 @@ function guardarEdicionCasilla(casilla, requestBody, resp) {
         return resp.status(400).send({ "message": "No hay campos válidos para actualizar" });
     }
 
+    let nuevoCodigo = actualizacion.codigo || casilla.codigo;
+    let nuevaSeccion = actualizacion.seccion || casilla.seccion;
+
+    Casillas.findOne({
+        "organizacion": casilla.organizacion,
+        "seccion": nuevaSeccion,
+        "codigo": nuevoCodigo,
+        "_id": { $ne: casilla._id }
+    }).then(
+        (duplicada) => {
+            if (duplicada) {
+                return resp.status(400).send({ "message": "Ya existe una casilla con ese codigo en esa seccion" });
+            }
+            aplicarEdicionCasilla(casilla, actualizacion, resp);
+        },
+        err => {
+            errorInterno(resp, "Error al validar el codigo de la casilla", err);
+        }
+    );
+}
+
+function aplicarEdicionCasilla(casilla, actualizacion, resp) {
     Casillas.findByIdAndUpdate(casilla._id, { $set: actualizacion }, { new: true }).then(
         (casillaActualizada) => {
             if (!casillaActualizada) {
                 return resp.status(404).send({ "message": "Casilla no encontrada al actualizar" });
             }
             console.log('[CASILLA] Actualizada:', casillaActualizada._id, actualizacion);
-            socketHelper.emitirEvento('casilla:actualizada', casillaActualizada, casillaActualizada.organizacion);
-            resp.status(200).send({ "message": "casilla actualizada", "casilla": casillaActualizada });
+
+            let responder = () => {
+                socketHelper.emitirEvento('casilla:actualizada', casillaActualizada, casillaActualizada.organizacion);
+                resp.status(200).send({ "message": "casilla actualizada", "casilla": casillaActualizada });
+            };
+
+            // Solo cambia el total si el elemento deja de ser (o pasa a ser) un puesto.
+            if (actualizacion.tipo && esPuesto(casilla.tipo) !== esPuesto(actualizacion.tipo)) {
+                sincronizarTotalPuestos(casilla.organizacion).then(
+                    responder,
+                    err => {
+                        console.error('[CASILLA] No se pudo sincronizar totalPuestos:', err);
+                        responder();
+                    }
+                );
+            }
+            else {
+                responder();
+            }
         },
         err => {
             console.error('[CASILLA] Error al actualizar:', err);
@@ -332,8 +375,24 @@ function eliminarCasilla(req, resp) {
 
                             Casillas.findByIdAndDelete(casillaId).then(
                                 () => {
-                                    socketHelper.emitirEvento('casilla:eliminada', { _id: casillaId }, casilla.organizacion);
-                                    resp.status(200).send({ "message": "casilla eliminada", "id": casillaId });
+                                    let responder = () => {
+                                        socketHelper.emitirEvento('casilla:eliminada', { _id: casillaId }, casilla.organizacion);
+                                        resp.status(200).send({ "message": "casilla eliminada", "id": casillaId });
+                                    };
+
+                                    // Si el elemento era un puesto, el total de la sede cambia.
+                                    if (esPuesto(casilla.tipo)) {
+                                        sincronizarTotalPuestos(casilla.organizacion).then(
+                                            responder,
+                                            err => {
+                                                console.error('[CASILLA] No se pudo sincronizar totalPuestos:', err);
+                                                responder();
+                                            }
+                                        );
+                                    }
+                                    else {
+                                        responder();
+                                    }
                                 },
                                 err => errorInterno(resp, "Error al eliminar la casilla", err)
                             );

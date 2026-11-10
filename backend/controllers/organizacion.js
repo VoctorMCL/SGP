@@ -188,8 +188,9 @@ function editarOrganizacion(req, resp) {
         return resp.status(400).send({ "message": "descripcion debe ser texto" });
     }
 
-    if (requestBody.totalPuestos !== undefined && !validacion.numeroEnteroPositivo(requestBody.totalPuestos)) {
-        return resp.status(400).send({ "message": "totalPuestos debe ser un numero entero mayor que cero" });
+    if (requestBody.totalPuestos !== undefined
+        && (!validacion.numero(requestBody.totalPuestos) || !Number.isInteger(requestBody.totalPuestos) || requestBody.totalPuestos < 0)) {
+        return resp.status(400).send({ "message": "totalPuestos debe ser un numero entero mayor o igual que cero" });
     }
 
     if (requestBody.limiteMiembros !== undefined && !validacion.numeroEnteroPositivo(requestBody.limiteMiembros)) {
@@ -224,10 +225,13 @@ function editarOrganizacion(req, resp) {
             }
 
             if (requestBody.totalPuestos !== undefined) {
-                Casillas.countDocuments({ "organizacion": organizacion._id }).then(
+                Casillas.countDocuments({
+                    "organizacion": organizacion._id,
+                    "tipo": { $in: ['standard', 'discapacitados', 'electrico'] }
+                }).then(
                     (casillasExistentes) => {
                         if (requestBody.totalPuestos < casillasExistentes) {
-                            return resp.status(400).send({ "message": "La organizacion ya tiene " + casillasExistentes + " casillas, no puede bajar totalPuestos por debajo de eso" });
+                            return resp.status(400).send({ "message": "La organizacion ya tiene " + casillasExistentes + " puestos, no puede bajar totalPuestos por debajo de eso" });
                         }
                         aplicarCambiosOrganizacion(organizacion, requestBody, resp);
                     },

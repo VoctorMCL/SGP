@@ -7,6 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { OrganizacionService } from '../../core/services/organizacion.service';
 import { CasillaService } from '../../core/services/casilla.service';
 import { Casilla, Organizacion } from '../../core/models';
+import { ThemeToggleComponent } from './theme-toggle.component';
 
 type Resultado =
   | { tipo: 'sede'; orgId: string; titulo: string; sub: string }
@@ -15,14 +16,14 @@ type Resultado =
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ThemeToggleComponent],
   template: `
     <header class="sticky top-0 z-50">
       <div class="border-b border-edge/90 bg-void/82 backdrop-blur-xl">
         <div class="mx-auto flex h-16 max-w-[92rem] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <!-- Marca -->
           <a routerLink="/organizaciones" class="group flex shrink-0 items-center gap-3">
-            <div class="notch-sm relative grid h-10 w-10 place-items-center bg-signal text-void shadow-[0_0_28px_-6px_rgba(203,213,225,0.45)] transition-transform duration-200 group-hover:-rotate-3">
+            <div class="brand-glow notch-sm relative grid h-10 w-10 place-items-center bg-signal text-void transition-transform duration-200 group-hover:-rotate-3">
               <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square">
                 <path d="M7.5 18V6h5.2a3.6 3.6 0 1 1 0 7.2H8.4" />
                 <path d="M7.5 13.2h5.2" />
@@ -166,6 +167,7 @@ type Resultado =
 
           <!-- Usuario -->
           <div class="flex items-center gap-2">
+            <app-theme-toggle></app-theme-toggle>
             @if (authService.currentUser(); as user) {
               <div class="relative lg:hidden">
                 <button

@@ -7,6 +7,7 @@ import { catchError, map } from 'rxjs/operators';
 import { NavbarComponent } from '../../shared/components/navbar.component';
 import { CasillaService } from '../../core/services/casilla.service';
 import { OrganizacionService } from '../../core/services/organizacion.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Casilla, Organizacion } from '../../core/models';
 
 type TipoElemento = 'standard' | 'discapacitados' | 'electrico' | 'entrada' | 'salida' | 'carril';
@@ -73,7 +74,7 @@ interface Feedback {
             <span class="hidden sm:inline">Vista conductor</span>
           </a>
 
-          <button type="button" (click)="guardarDiseno()" [disabled]="guardando()" class="btn btn-signal h-9">
+          <button type="button" (click)="guardarDiseno()" [disabled]="guardando() || !puedeEditar()" class="btn btn-signal h-9">
             @if (guardando()) {
               <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-void/25 border-t-void"></span>
               <span>Guardando…</span>
@@ -112,6 +113,15 @@ interface Feedback {
               <path stroke-linecap="round" stroke-width="2" d="M6 6l12 12M18 6 6 18"></path>
             </svg>
           </button>
+        </div>
+      }
+
+      @if (!puedeEditar()) {
+        <div class="mt-4 flex items-start gap-2 rounded-md border border-warn/30 bg-warn/[0.07] p-3 text-[0.7rem] text-warn">
+          <svg class="mt-0.5 h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v4m0 3.5v.01M10.3 3.9 2.6 17.2A1.8 1.8 0 0 0 4.2 20h15.6a1.8 1.8 0 0 0 1.6-2.8L13.7 3.9a1.8 1.8 0 0 0-3.4 0Z"></path>
+          </svg>
+          <span>Solo el creador de la sede puede modificar el plano. Puedes verlo, pero no guardar cambios.</span>
         </div>
       }
 
@@ -621,6 +631,7 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private casillaService = inject(CasillaService);
   private organizacionService = inject(OrganizacionService);
+  private authService = inject(AuthService);
 
   readonly ANCHO = 1200;
   readonly ALTO = 720;
@@ -639,6 +650,14 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
   guardando = signal<boolean>(false);
   hayCambios = signal<boolean>(false);
   feedback = signal<Feedback | null>(null);
+
+  /** Solo el creador de la sede puede modificar su plano. */
+  puedeEditar = computed(() => {
+    const org = this.organizacion();
+    const usuario = this.authService.currentUser();
+    if (!org || !usuario) return true;
+    return org.creadoPor === usuario._id;
+  });
 
   tipos: Array<{ id: TipoElemento; label: string; dot: string }> = [
     { id: 'standard', label: 'Estándar', dot: 'bg-ok' },
@@ -1133,52 +1152,90 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
 
       if (elem._id) {
         return this.casillaService.editarCasilla(elem._id, payload).pipe(
-          map(() => ({ ok: true, uid: elem.uid, casilla: null as Casilla | null })),
-          catchError(() => of({ ok: false, uid: elem.uid, casilla: null as Casilla | null }))
+          map(() => ({ ok: true, uid: elem.uid, casilla: null as Casilla | null, error: null as string | null })),
+          catchError((err) => of({ ok: false, uid: elem.uid, casilla: null as Casilla | null, error: this.mensajeError(err) }))
         );
       }
 
       return this.casillaService.crearCasilla({ organizacion: orgId, ...payload }).pipe(
-        map((res: any) => ({ ok: true, uid: elem.uid, casilla: (res?.casilla ?? null) as Casilla | null })),
-        catchError(() => of({ ok: false, uid: elem.uid, casilla: null as Casilla | null }))
+        map((res: any) => ({ ok: true, uid: elem.uid, casilla: (res?.casilla ?? null) as Casilla | null, error: null as string | null })),
+        catchError((err) => of({ ok: false, uid: elem.uid, casilla: null as Casilla | null, error: this.mensajeError(err) }))
       );
     });
 
     forkJoin(solicitudes).subscribe((resultados) => {
       const lista = [...this.elementos()];
-      let fallos = 0;
+      const fallos = resultados.filter((res) => !res.ok);
 
       resultados.forEach((res) => {
-        if (!res.ok) {
-          fallos++;
+        if (!res.ok || !res.casilla) {
           return;
         }
-        if (res.casilla) {
-          const indice = lista.findIndex((e) => e.uid === res.uid);
-          if (indice >= 0) {
-            lista[indice] = {
-              ...lista[indice],
-              _id: res.casilla._id,
-              esNuevo: false,
-              estado: (res.casilla.estado as 'libre' | 'ocupado') || lista[indice].estado
-            };
-          }
+        const indice = lista.findIndex((e) => e.uid === res.uid);
+        if (indice >= 0) {
+          lista[indice] = {
+            ...lista[indice],
+            _id: res.casilla._id,
+            esNuevo: false,
+            estado: (res.casilla.estado as 'libre' | 'ocupado') || lista[indice].estado
+          };
         }
       });
 
       this.elementos.set(lista);
-      this.guardando.set(false);
 
-      if (fallos === 0) {
-        this.hayCambios.set(false);
-        this.feedback.set({ tipo: 'ok', texto: 'Plano guardado y sincronizado con la vista del conductor.' });
-      } else {
+      if (fallos.length > 0) {
+        this.guardando.set(false);
+        const detalle = fallos[0].error || 'Error desconocido al guardar.';
         this.feedback.set({
           tipo: 'warn',
-          texto: `${fallos} elemento(s) no se pudieron guardar. Revisa el límite de puestos de la sede y vuelve a intentar.`
+          texto: `${fallos.length} elemento(s) no se pudieron guardar. ${detalle}`
+        });
+        return;
+      }
+
+      this.sincronizarTotalPuestos(orgId, lista);
+    });
+  }
+
+  /**
+   * El plano es la fuente de verdad: al guardarlo, el total de puestos de la
+   * sede se ajusta al número real de casillas de parqueo dibujadas.
+   */
+  private sincronizarTotalPuestos(orgId: string, lista: ElementoDiseno[]): void {
+    const puestos = lista.filter((e) => this.esPuesto(e.tipo)).length;
+    const org = this.organizacion();
+
+    if (!org || org.totalPuestos === puestos) {
+      this.finalizarGuardado();
+      return;
+    }
+
+    this.organizacionService.editarOrganizacion(orgId, { totalPuestos: puestos }).subscribe({
+      next: (res: any) => {
+        this.organizacion.set(res?.organizacion ?? { ...org, totalPuestos: puestos });
+        this.finalizarGuardado();
+      },
+      error: (err) => {
+        // El plano sí quedó guardado; solo falló el contador de la sede.
+        this.guardando.set(false);
+        this.hayCambios.set(false);
+        this.feedback.set({
+          tipo: 'warn',
+          texto: `Plano guardado, pero no se pudo actualizar el total de puestos: ${this.mensajeError(err)}`
         });
       }
     });
+  }
+
+  private finalizarGuardado(): void {
+    this.guardando.set(false);
+    this.hayCambios.set(false);
+    this.feedback.set({ tipo: 'ok', texto: 'Plano guardado y sincronizado con la vista del conductor.' });
+  }
+
+  private mensajeError(err: any): string {
+    return err?.error?.message || err?.message || 'Error desconocido al guardar.';
   }
 
   // ── Utilidades ───────────────────────────────────────────────────
