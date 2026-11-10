@@ -13,6 +13,8 @@ let OrganizacionSchema = Schema(
         "totalPuestos": Number,
         "limiteMiembros": Number,
         "zonaHoraria": String,
+        "latitud": Number,
+        "longitud": Number,
         "reservasPublicas": Boolean,
         "cobroAutomatico": Boolean,
         "cobroPorHora": Boolean,

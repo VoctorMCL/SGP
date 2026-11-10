@@ -313,6 +313,8 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
     totalPuestos: [24, [Validators.required, Validators.min(1)]],
     limiteMiembros: [100, [Validators.required, Validators.min(1)]],
     zonaHoraria: ['America/Bogota', [Validators.required]],
+    latitud: [6.172],
+    longitud: [-75.609],
     reservasPublicas: [true],
     cobroAutomatico: [false],
     cobroPorHora: [false],
@@ -362,16 +364,14 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
     this.map.on('click', (e: L.LeafletMouseEvent) => {
       if (this.marker) {
         this.marker.setLatLng(e.latlng);
-        this.actualizarZonaHoraria(e.latlng.lat, e.latlng.lng);
-        this.geocodificarInverso(e.latlng.lat, e.latlng.lng);
+        this.actualizarUbicacion(e.latlng.lat, e.latlng.lng);
       }
     });
 
     this.marker.on('dragend', () => {
       if (this.marker) {
         const pos = this.marker.getLatLng();
-        this.actualizarZonaHoraria(pos.lat, pos.lng);
-        this.geocodificarInverso(pos.lat, pos.lng);
+        this.actualizarUbicacion(pos.lat, pos.lng);
       }
     });
 
@@ -388,14 +388,24 @@ export class CrearOrganizacionComponent implements AfterViewInit, OnDestroy {
           const lng = pos.coords.longitude;
           this.map?.setView([lat, lng], 16);
           this.marker?.setLatLng([lat, lng]);
-          this.actualizarZonaHoraria(lat, lng);
-          this.geocodificarInverso(lat, lng);
+          this.actualizarUbicacion(lat, lng);
         },
         (err) => {
           console.warn('No se pudo obtener la geolocalización:', err);
         }
       );
     }
+  }
+
+  /**
+   * Guarda las coordenadas del pin en el formulario y actualiza la zona
+   * horaria y la dirección. El editor de planos usa estas coordenadas para
+   * centrar su vista satélite.
+   */
+  private actualizarUbicacion(lat: number, lng: number): void {
+    this.orgForm.patchValue({ latitud: lat, longitud: lng });
+    this.actualizarZonaHoraria(lat, lng);
+    this.geocodificarInverso(lat, lng);
   }
 
   /** La zona horaria se deduce de las coordenadas reales del pin. */

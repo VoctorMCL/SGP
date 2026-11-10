@@ -19,6 +19,8 @@ export interface Organizacion {
   totalPuestos: number;
   limiteMiembros: number;
   zonaHoraria: string;
+  latitud?: number;
+  longitud?: number;
   reservasPublicas: boolean;
   cobroAutomatico: boolean;
   cobroPorHora: boolean;

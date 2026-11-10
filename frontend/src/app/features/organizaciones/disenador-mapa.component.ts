@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, signal, computed, inject } from '@angular
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
+import * as L from 'leaflet';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { NavbarComponent } from '../../shared/components/navbar.component';
@@ -219,6 +220,20 @@ interface Feedback {
               Grid
             </button>
 
+            <button
+              type="button"
+              (click)="alternarSatelite()"
+              class="tool-btn h-8"
+              [class.tool-btn-active]="satelite()"
+              title="Mostrar u ocultar la vista satélite"
+            >
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="8.5" stroke-width="1.7"></circle>
+                <path stroke-width="1.5" d="M3.5 12h17M12 3.5c2.5 2.4 3.8 5.3 3.8 8.5s-1.3 6.1-3.8 8.5c-2.5-2.4-3.8-5.3-3.8-8.5S9.5 5.9 12 3.5Z"></path>
+              </svg>
+              <span class="hidden sm:inline">Satélite</span>
+            </button>
+
             <span class="mx-0.5 hidden h-5 w-px bg-edge sm:block"></span>
 
             <div class="flex items-center overflow-hidden rounded border border-edge">
@@ -257,6 +272,7 @@ interface Feedback {
 
       <!-- Lienzo + inspector -->
       <div class="mt-4 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20.5rem]">
+        <div class="min-w-0 space-y-4">
         <section class="panel overflow-hidden">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-edge px-4 py-2.5">
             <div class="flex items-center gap-2">
@@ -447,6 +463,26 @@ interface Feedback {
             }
           </div>
         </section>
+
+        @if (satelite()) {
+          <section class="panel overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-edge px-4 py-2.5">
+              <div class="flex items-center gap-2">
+                <span class="live-dot scale-75"></span>
+                <span class="mono text-[0.54rem] uppercase tracking-[0.16em] text-chalk">Vista satélite</span>
+                <span class="mono text-[0.5rem] text-mist/60">Centro en el pin de la sede</span>
+              </div>
+              <button type="button" (click)="alternarSatelite()" class="mono text-[0.5rem] uppercase tracking-[0.12em] text-mist transition-colors hover:text-chalk" title="Cerrar vista satélite">
+                Ocultar
+              </button>
+            </div>
+            <div id="mapa-satelite-plano" class="h-[22rem] w-full bg-[#06090e]"></div>
+            <div class="border-t border-edge px-4 py-2">
+              <span class="text-[0.6rem] text-mist">Arrastra el mapa para moverlo libremente y usa la rueda para acercar.</span>
+            </div>
+          </section>
+        }
+        </div>
 
         <!-- Inspector -->
         <aside class="space-y-4 lg:sticky lg:top-24">
@@ -645,6 +681,7 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
   zoom = signal<number>(0.7);
   snap = signal<boolean>(true);
   mostrarGrilla = signal<boolean>(true);
+  satelite = signal<boolean>(false);
   cursorPos = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
   guardando = signal<boolean>(false);
@@ -698,6 +735,8 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
   private anguloInicial = 0;
   private centroRotacion = { x: 0, y: 0 };
   private huboMovimiento = false;
+  private suprimirClickHasta = 0;
+  private mapaSatelite: L.Map | null = null;
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -716,13 +755,21 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
     window.removeEventListener('pointermove', this.alMoverGlobal);
     window.removeEventListener('pointerup', this.alSoltarGlobal);
     window.removeEventListener('keydown', this.alPresionarTecla);
+    this.destruirMapaSatelite();
   }
 
   // ── Carga ────────────────────────────────────────────────────────
   cargarOrganizacion(id: string): void {
     this.organizacionService.misOrganizaciones().subscribe((orgs) => {
       const match = orgs.find((o) => o._id === id);
-      if (match) this.organizacion.set(match);
+      if (match) {
+        this.organizacion.set(match);
+
+        // Si la vista satélite ya está abierta, se recentra en el pin real.
+        if (this.mapaSatelite && typeof match.latitud === 'number' && typeof match.longitud === 'number') {
+          this.mapaSatelite.setView([match.latitud, match.longitud], 18);
+        }
+      }
     });
   }
 
@@ -782,6 +829,57 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
         this.feedback.set({ tipo: 'error', texto: 'No se pudieron cargar las casillas de esta sede.' });
       }
     });
+  }
+
+  // ── Vista satélite ───────────────────────────────────────────────
+  alternarSatelite(): void {
+    if (this.satelite()) {
+      this.satelite.set(false);
+      this.destruirMapaSatelite();
+      return;
+    }
+
+    this.satelite.set(true);
+    // Se espera al siguiente ciclo para que el contenedor ya exista.
+    setTimeout(() => this.iniciarMapaSatelite(), 30);
+  }
+
+  private iniciarMapaSatelite(): void {
+    if (!this.satelite()) return;
+    this.destruirMapaSatelite();
+
+    const contenedor = document.getElementById('mapa-satelite-plano');
+    if (!contenedor) return;
+
+    const org = this.organizacion();
+    const lat = typeof org?.latitud === 'number' ? org.latitud : 6.172;
+    const lng = typeof org?.longitud === 'number' ? org.longitud : -75.609;
+
+    this.mapaSatelite = L.map(contenedor, {
+      zoomControl: false,
+      attributionControl: false
+    }).setView([lat, lng], 18);
+
+    L.control.zoom({ position: 'bottomright' }).addTo(this.mapaSatelite);
+
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19
+    }).addTo(this.mapaSatelite);
+
+    L.circleMarker([lat, lng], {
+      radius: 7,
+      color: '#5d8bff',
+      weight: 2,
+      fillColor: '#5d8bff',
+      fillOpacity: 0.9
+    }).addTo(this.mapaSatelite);
+
+    setTimeout(() => this.mapaSatelite?.invalidateSize(), 120);
+  }
+
+  private destruirMapaSatelite(): void {
+    this.mapaSatelite?.remove();
+    this.mapaSatelite = null;
   }
 
   // ── Añadir / duplicar / eliminar ─────────────────────────────────
@@ -865,6 +963,9 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
 
   // ── Interacción en el lienzo ─────────────────────────────────────
   alClickLienzo(event: MouseEvent): void {
+    // Un arrastre o giro no debe convertirse en un clic de creación.
+    if (this.consumirClickSuprimido()) return;
+
     const tipo = this.herramienta();
     if (tipo === 'select') {
       this.deseleccionar();
@@ -909,6 +1010,8 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
   }
 
   seleccionarElemento(elem: ElementoDiseno): void {
+    // Evita que al soltar el puntero quede seleccionado otro elemento.
+    if (this.consumirClickSuprimido()) return;
     this.seleccionadoId.set(elem.uid);
   }
 
@@ -988,11 +1091,24 @@ export class DisenadorMapaComponent implements OnInit, OnDestroy {
   };
 
   private alSoltarGlobal = (): void => {
-    if (this.modo && this.huboMovimiento) this.hayCambios.set(true);
+    if (this.modo && this.huboMovimiento) {
+      this.hayCambios.set(true);
+      // El clic se dispara después de pointerup. Se ignora para que el
+      // elemento seleccionado no cambie al soltar el puntero.
+      this.suprimirClickHasta = performance.now() + 350;
+    }
     this.modo = null;
     this.uidActivo = '';
     this.huboMovimiento = false;
   };
+
+  private consumirClickSuprimido(): boolean {
+    if (performance.now() < this.suprimirClickHasta) {
+      this.suprimirClickHasta = 0;
+      return true;
+    }
+    return false;
+  }
 
   private alPresionarTecla = (event: KeyboardEvent): void => {
     const objetivo = event.target as HTMLElement | null;

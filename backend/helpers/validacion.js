@@ -45,6 +45,14 @@ function placaValida(valor) {
     return typeof valor === 'string' && /^([A-Z]{3})[\s_-]?([0-9]{3})$/.test(valor.trim().toUpperCase());
 }
 
+function latitudValida(valor) {
+    return typeof valor === 'number' && Number.isFinite(valor) && valor >= -90 && valor <= 90;
+}
+
+function longitudValida(valor) {
+    return typeof valor === 'number' && Number.isFinite(valor) && valor >= -180 && valor <= 180;
+}
+
 function nitValido(valor) {
     // NIT colombiano: solo digitos, con puntos y guiones opcionales.
     // Ejemplos validos: 890.984.812-5, 900123456-7, 900123456.
@@ -64,4 +72,4 @@ function zonaHorariaValida(zona) {
     }
 }
 
-module.exports = { idValido, numeroEnteroPositivo, booleano, numero, texto, normalizarNombre, normalizarPlaca, placaValida, nitValido, zonaHorariaValida };
+module.exports = { idValido, numeroEnteroPositivo, booleano, numero, texto, normalizarNombre, normalizarPlaca, placaValida, nitValido, latitudValida, longitudValida, zonaHorariaValida };

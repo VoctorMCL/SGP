@@ -71,6 +71,11 @@ function crearOrganizacion(req, resp) {
     else if (!validacion.zonaHorariaValida(requestBody.zonaHoraria)) {
         return resp.status(400).send({ "message": "zonaHoraria debe ser una zona valida, por ejemplo America/Bogota" });
     }
+    else if ((requestBody.latitud !== undefined && !validacion.latitudValida(requestBody.latitud))
+        || (requestBody.longitud !== undefined && !validacion.longitudValida(requestBody.longitud))
+        || ((requestBody.latitud === undefined) !== (requestBody.longitud === undefined))) {
+        return resp.status(400).send({ "message": "latitud y longitud deben ser coordenadas validas" });
+    }
     else if (requestBody.descripcion !== undefined && typeof requestBody.descripcion !== 'string') {
         return resp.status(400).send({ "message": "descripcion debe ser texto" });
     }
@@ -87,6 +92,8 @@ function crearOrganizacion(req, resp) {
         "totalPuestos": requestBody.totalPuestos,
         "limiteMiembros": requestBody.limiteMiembros,
         "zonaHoraria": requestBody.zonaHoraria,
+        "latitud": requestBody.latitud,
+        "longitud": requestBody.longitud,
         "reservasPublicas": requestBody.reservasPublicas || false,
         "cobroAutomatico": requestBody.cobroAutomatico || false,
         "cobroPorHora": requestBody.cobroPorHora || false,
@@ -237,14 +244,19 @@ async function editarOrganizacion(req, resp) {
         return resp.status(400).send({ "message": "zonaHoraria debe ser una zona valida, por ejemplo America/Bogota" });
     }
 
+    if ((requestBody.latitud !== undefined && !validacion.latitudValida(requestBody.latitud))
+        || (requestBody.longitud !== undefined && !validacion.longitudValida(requestBody.longitud))) {
+        return resp.status(400).send({ "message": "latitud y longitud deben ser coordenadas validas" });
+    }
+
     if (!banderasValidas(requestBody)) {
         return resp.status(400).send({ "message": "reservasPublicas, cobroAutomatico, cobroPorHora y acceso24_7 deben ser true o false" });
     }
 
     let camposActualizables = [
         'nombre', 'nit', 'tipoEntidad', 'direccion', 'descripcion', 'totalPuestos',
-        'limiteMiembros', 'zonaHoraria', 'reservasPublicas', 'cobroAutomatico',
-        'cobroPorHora', 'acceso24_7'
+        'limiteMiembros', 'zonaHoraria', 'latitud', 'longitud', 'reservasPublicas',
+        'cobroAutomatico', 'cobroPorHora', 'acceso24_7'
     ];
 
     if (!camposActualizables.some((campo) => requestBody[campo] !== undefined)) {
@@ -296,6 +308,8 @@ function aplicarCambiosOrganizacion(organizacion, requestBody, resp) {
     if (requestBody.totalPuestos !== undefined) organizacion.totalPuestos = requestBody.totalPuestos;
     if (requestBody.limiteMiembros !== undefined) organizacion.limiteMiembros = requestBody.limiteMiembros;
     if (requestBody.zonaHoraria) organizacion.zonaHoraria = requestBody.zonaHoraria;
+    if (requestBody.latitud !== undefined) organizacion.latitud = requestBody.latitud;
+    if (requestBody.longitud !== undefined) organizacion.longitud = requestBody.longitud;
     if (requestBody.reservasPublicas !== undefined) organizacion.reservasPublicas = requestBody.reservasPublicas;
     if (requestBody.cobroAutomatico !== undefined) organizacion.cobroAutomatico = requestBody.cobroAutomatico;
     if (requestBody.cobroPorHora !== undefined) organizacion.cobroPorHora = requestBody.cobroPorHora;
